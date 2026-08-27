@@ -109,6 +109,8 @@
                   <option value="1">1-Day Ahead (Immediate Surge)</option>
                   <option value="7" selected>7-Days Ahead (Standard Window)</option>
                   <option value="15">15-Days Ahead (Advance Window)</option>
+                  <option value="30">30-Days Ahead (Monthly Window)</option>
+                  <option value="45">45-Days Ahead (Long Horizon)</option>
                 </select>
               </div>
             </div>
@@ -310,7 +312,7 @@
     <div class="modal-card" onclick="event.stopPropagation()">
       <div class="modal-header">
         <div class="modal-carrier-info">
-          <div id="modalLogoAvatar" class="carrier-avatar" style="width: 40px; height: 40px; font-size: 1.1rem;">✈</div>
+          <div id="modalLogoAvatar" class="carrier-avatar" style="width: 40px; height: 40px; font-size: 1.1rem; display: flex; align-items: center; justify-content: center; border-radius: 8px; color: white;">✈</div>
           <div>
             <h3 id="modalCarrierName">IndiGo Airlines</h3>
             <span id="modalFlightNumber" class="modal-flight-code">6E-5021 · Nonstop</span>
@@ -343,55 +345,16 @@
       </div>
     </div>
   </div>
-<script>
+  <script>
+    const API_URL = "http://127.0.0.1:8000/api";
     let decayChartInstance = null;
 
-    // Clean Simple Plane Avatars with Brand Colors
     const carrierDB = [
-      {
-        name: "IndiGo",
-        code: "6E-5021",
-        dep: "08:45 AM",
-        arr: "11:00 AM",
-        dur: "2 hr 15 min",
-        stop: "Nonstop",
-        co2: "89 kg CO2e",
-        factor: 0.98,
-        logoBg: "#0284c7"
-      },
-      {
-        name: "Air India",
-        code: "AI-805",
-        dep: "09:00 AM",
-        arr: "11:15 AM",
-        dur: "2 hr 15 min",
-        stop: "Nonstop",
-        co2: "103 kg CO2e",
-        factor: 1.05,
-        logoBg: "#dc2626"
-      },
-      {
-        name: "Akasa Air",
-        code: "QP-1311",
-        dep: "09:20 AM",
-        arr: "11:40 AM",
-        dur: "2 hr 20 min",
-        stop: "Nonstop",
-        co2: "88 kg CO2e",
-        factor: 0.94,
-        logoBg: "#ea580c"
-      },
-      {
-        name: "SpiceJet",
-        code: "SG-8169",
-        dep: "06:30 PM",
-        arr: "08:50 PM",
-        dur: "2 hr 20 min",
-        stop: "Nonstop",
-        co2: "92 kg CO2e",
-        factor: 1.02,
-        logoBg: "#d97706"
-      }
+      { name: "IndiGo", code: "6E-5021", dep: "08:45 AM", arr: "11:00 AM", dur: "2 hr 15 min", stop: "Nonstop", co2: "89 kg CO2e", factor: 0.98, logoBg: "#0284c7" },
+      { name: "Air India", code: "AI-805", dep: "09:00 AM", arr: "11:15 AM", dur: "2 hr 15 min", stop: "Nonstop", co2: "103 kg CO2e", factor: 1.05, logoBg: "#dc2626" },
+      { name: "Akasa Air", code: "QP-1311", dep: "09:20 AM", arr: "11:40 AM", dur: "2 hr 20 min", stop: "Nonstop", co2: "88 kg CO2e", factor: 0.94, logoBg: "#ea580c" },
+      { name: "SpiceJet", code: "SG-8169", dep: "06:30 PM", arr: "08:50 PM", dur: "2 hr 20 min", stop: "Nonstop", co2: "92 kg CO2e", factor: 1.02, logoBg: "#d97706" },
+      { name: "Air India Express", code: "IX-214", dep: "04:15 PM", arr: "06:35 PM", dur: "2 hr 20 min", stop: "Nonstop", co2: "86 kg CO2e", factor: 0.93, logoBg: "#f97316" }
     ];
 
     function handleSearch(e) {
@@ -410,7 +373,6 @@
         return;
       }
 
-      // Smooth Page View Swap
       document.getElementById('searchViewSection').style.display = 'none';
       document.getElementById('resultsViewSection').style.display = 'block';
       document.getElementById('barUrl').innerText = `skylitics.gov.in/intel?sector=${origin}-${destination}&cabin=${cabin}&horizon=${days}d`;
@@ -426,16 +388,42 @@
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
 
-    function runAnalysis(origin, dest, cabin, days) {
+    async function runAnalysis(origin, dest, cabin, days) {
       let classMult = 1.0;
       if (cabin === "Premium Economy") classMult = 1.45;
       if (cabin === "Business") classMult = 2.60;
       if (cabin === "First Class") classMult = 4.20;
 
-      const baseFare = 4200 * classMult;
-      const fare1d = Math.round(baseFare * 1.55);
-      const fare7d = Math.round(baseFare * 1.12);
-      const fare15d = Math.round(baseFare * 0.94);
+      let baseFare = 4200 * classMult;
+      let fare1d = Math.round(baseFare * 1.55);
+      let fare7d = Math.round(baseFare * 1.12);
+      let fare15d = Math.round(baseFare * 0.94);
+      let liveFlights = [];
+
+      try {
+        const [indexRes, flightRes] = await Promise.all([
+          fetch(`${API_URL}/index`),
+          fetch(`${API_URL}/flights?origin=${origin}&destination=${dest}&advance_days=${days}`)
+        ]);
+
+        if (indexRes.ok) {
+          const indexData = await indexRes.json();
+          const corridorKey = `${origin}-${dest}`;
+          if (indexData.corridors && indexData.corridors[corridorKey]) {
+            const h = indexData.corridors[corridorKey].horizons;
+            if (h[1]) fare1d = Math.round(h[1].median_fare * classMult);
+            if (h[7]) fare7d = Math.round(h[7].median_fare * classMult);
+            if (h[15]) fare15d = Math.round(h[15].median_fare * classMult);
+            baseFare = indexData.corridors[corridorKey].base_tariff * classMult;
+          }
+        }
+
+        if (flightRes.ok) {
+          liveFlights = await flightRes.json();
+        }
+      } catch (err) {
+        console.log("Using autonomous client engine for calculations.");
+      }
 
       const activeFare = days === 1 ? fare1d : (days === 7 ? fare7d : fare15d);
       const indexValue = ((activeFare / baseFare) * 100).toFixed(1);
@@ -450,7 +438,6 @@
 
       document.getElementById('activeCorridorText').innerText = `${origin} ➔ ${dest} · ${cabin} (${days}d Horizon Window)`;
 
-      // Horizon Cards
       document.getElementById('rcOrigin1').innerText = origin;
       document.getElementById('rcDest1').innerText = dest;
       document.getElementById('rcDate1').innerText = `Travel Date: ${fDate(d1)}`;
@@ -466,7 +453,6 @@
       document.getElementById('rcDate15').innerText = `Travel Date: ${fDate(d15)}`;
       document.getElementById('rcFare15').innerText = `₹${fare15d.toLocaleString('en-IN')}`;
 
-      // Stat Quad
       document.getElementById('displayFare').innerText = `₹${activeFare.toLocaleString('en-IN')}`;
       document.getElementById('displayCabin').innerText = `${cabin} · Active`;
       document.getElementById('displayRelative').innerText = indexValue;
@@ -510,10 +496,14 @@
       document.getElementById('scheduleTitle').innerText = `${origin} ➔ ${dest} Live Ingestion Timetable`;
       document.getElementById('scheduleSub').innerText = `Click any carrier card to inspect fare breakup (${cabin} · ${days}d horizon)`;
 
-      // Populate Flight Rows With Simple Plane Avatar Logos & Delta Badges
       const container = document.getElementById('flightListContainer');
       container.innerHTML = carrierDB.map((c, index) => {
-        const flightFare = Math.round(activeFare * c.factor);
+        let flightFare = Math.round(activeFare * c.factor);
+        if (liveFlights.length > 0) {
+          const match = liveFlights.find(lf => lf.airline.toLowerCase().includes(c.name.toLowerCase()));
+          if (match) flightFare = Math.round(match.total_fare * classMult);
+        }
+
         const priceIncreaseAmt = flightFare - Math.round(baseFare);
         const priceIncreasePct = (((flightFare - baseFare) / baseFare) * 100).toFixed(1);
         const isUp = priceIncreaseAmt >= 0;
@@ -521,7 +511,7 @@
         return `
           <div class="flight-strip-full-row" onclick="openFlightModal(${index}, ${flightFare}, ${Math.round(baseFare)})">
             <div class="f-col-brand">
-              <div class="carrier-avatar" style="background: ${c.logoBg}">✈</div>
+              <div class="carrier-avatar" style="background: ${c.logoBg}; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; border-radius: 8px; color: white; font-weight: bold;">✈</div>
               <div>
                 <strong class="carrier-title">${c.name}</strong>
                 <small class="flight-no-sub">${c.code}</small>
@@ -644,15 +634,31 @@
       }
     }
 
-    function exportMoSPIData() {
+    async function exportMoSPIData() {
+      try {
+        const res = await fetch(`${API_URL}/export-mospi-csv`);
+        if (res.ok) {
+          const blob = await res.blob();
+          const url = window.URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = "MoSPI_National_CPI_Airfare_Report.csv";
+          document.body.appendChild(a);
+          a.click();
+          a.remove();
+          return;
+        }
+      } catch (err) {
+        // Fallback static export if server is not active
+      }
+
       const csvContent = "data:text/csv;charset=utf-8," 
         + "Timestamp,Corridor,Origin,Destination,CabinClass,AdvanceHorizon,LaspeyresIndex,BaseTariffINR,LiveTariffINR,SurgeStatus,TrafficWeight\n"
-        + "2026-08-27 10:00:00,GOI-DEL,GOI,DEL,Business,1d,155.0,10920,16926,Surge Spike,0.185\n"
-        + "2026-08-27 10:00:00,GOI-DEL,GOI,DEL,Business,7d,112.0,10920,12230,Moderate,0.185\n"
-        + "2026-08-27 10:00:00,GOI-DEL,GOI,DEL,Business,15d,94.0,10920,10264,Optimal Base,0.185\n"
-        + "2026-08-27 10:00:00,DEL-BOM,DEL,BOM,Economy,1d,155.0,4200,6510,Surge Spike,0.185\n"
-        + "2026-08-27 10:00:00,DEL-BLR,DEL,BLR,Economy,7d,108.5,4800,5208,Moderate,0.142\n"
-        + "2026-08-27 10:00:00,BOM-BLR,BOM,BLR,Economy,15d,92.4,3600,3326,Optimal Base,0.098";
+        + "2026-08-27 10:00:00,DEL-BOM,DEL,BOM,Economy,1d,155.0,4600,7130,Surge Spike,0.254\n"
+        + "2026-08-27 10:00:00,DEL-BOM,DEL,BOM,Economy,7d,114.0,4600,5244,Moderate,0.254\n"
+        + "2026-08-27 10:00:00,DEL-BOM,DEL,BOM,Economy,15d,95.0,4600,4370,Optimal Base,0.254\n"
+        + "2026-08-27 10:00:00,DEL-BLR,DEL,BLR,Economy,7d,108.5,5200,5642,Moderate,0.182\n"
+        + "2026-08-27 10:00:00,BOM-BLR,BOM,BLR,Economy,15d,92.4,3800,3511,Optimal Base,0.144";
 
       const encodedUri = encodeURI(csvContent);
       const link = document.createElement("a");

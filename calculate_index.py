@@ -1,91 +1,95 @@
-import json
+"""
+calculate_index.py — MoSPI / DGCA Laspeyres Price Index Aggregator
+Calculates corridor price relatives, horizon decay, and national composite index.
+"""
+
 import sqlite3
-import pandas as pd
-import numpy as np
+import datetime
 
-# 1. Load Raw Flight Data
-try:
-    df = pd.read_csv("airfare_price_index_data.csv")
-    print(f"[Person 2: Data Cleaning] Loaded {len(df)} raw flight rows.")
-except FileNotFoundError:
-    print("Error: 'airfare_price_index_data.csv' not found. Run scraper.py first.")
-    exit()
+DB_FILE = "airfare_intelligence.db"
 
-# 2. Store Clean Structured Data in Database (Person 2 Deliverable)
-conn = sqlite3.connect("airfare_intelligence.db")
-df.to_sql("raw_flights", conn, if_exists="replace", index=False)
-print("[Person 2: Database] Persisted clean records to SQLite Database ('airfare_intelligence.db').")
+def compute_airfare_index():
+    conn = sqlite3.connect(DB_FILE)
+    cursor = conn.cursor()
 
-# 3. Benchmark Base Prices (Base Year: January 2026 = 100)
-BASE_PRICES = {
-    "DEL-BOM": 4200, "BOM-DEL": 4200, "DEL-BLR": 4800, "BLR-DEL": 4800,
-    "BOM-BLR": 3600, "BLR-BOM": 3600, "DEL-CCU": 4500, "CCU-DEL": 4500,
-    "DEL-HYD": 4100, "HYD-DEL": 4100, "DEL-MAA": 4700, "MAA-DEL": 4700,
-    "DEL-GOI": 5200, "GOI-DEL": 5200, "BOM-GOI": 3400, "GOI-BOM": 3400,
-    "DEL-SXR": 5600, "SXR-DEL": 5600, "DEL-GAU": 5100, "GAU-DEL": 5100,
-    "DEL-PNQ": 4300, "PNQ-DEL": 4300, "DEL-AMD": 3200, "AMD-DEL": 3200
-}
+    # 1. Fetch Route Basket and DGCA Traffic Weights
+    cursor.execute("SELECT origin, destination, route_name, route_weight, base_tariff_inr FROM route_basket WHERE is_active = 1")
+    routes = cursor.fetchall()
 
-METRO_TRUNKS = ["DEL-BOM", "BOM-DEL", "DEL-BLR", "BLR-DEL", "BOM-BLR", "BLR-BOM", "DEL-HYD", "DEL-CCU"]
+    results = {}
+    national_composite = {1: 0.0, 7: 0.0, 15: 0.0, 30: 0.0, 45: 0.0}
+    now = datetime.datetime.now().isoformat()
 
-# 4. Compute Route Statistics & Price Relatives (Person 3 Deliverable)
-summary = df.groupby("route").agg(
-    current_mean_price=("fare_inr", "mean"),
-    min_price=("fare_inr", "min"),
-    max_price=("fare_inr", "max"),
-    total_quotes=("fare_inr", "count")
-).reset_index()
+    for origin, dest, route_name, weight, base_tariff in routes:
+        corridor = f"{origin}-{dest}"
+        results[corridor] = {
+            "origin": origin,
+            "destination": dest,
+            "route_name": route_name,
+            "weight": weight,
+            "base_tariff": base_tariff,
+            "horizons": {}
+        }
 
-summary["base_price"] = summary["route"].map(BASE_PRICES).fillna(4000)
+        for days in [1, 7, 15, 30, 45]:
+            cursor.execute("""
+            SELECT total_fare FROM cleaned_fare_quotes 
+            WHERE origin = ? AND destination = ? AND advance_days = ?
+            ORDER BY total_fare ASC
+            """, (origin, dest, days))
+            
+            fares = [row[0] for row in cursor.fetchall()]
+            if not fares:
+                continue
 
-# Price Relative R_i = (Current Price / Base Price) * 100
-summary["route_index"] = (summary["current_mean_price"] / summary["base_price"]) * 100
-summary["surge_pct"] = summary["route_index"] - 100
-summary["weight"] = summary["route"].apply(lambda r: 0.05 if r in METRO_TRUNKS else 0.01)
+            # Calculate Median Fare (removes outlier distortion)
+            mid = len(fares) // 2
+            median_fare = fares[mid] if len(fares) % 2 != 0 else (fares[mid - 1] + fares[mid]) / 2.0
 
-# Overall Index = sum(w_i * R_i) / sum(w_i)
-total_weight = summary["weight"].sum()
-overall_index = (summary["route_index"] * summary["weight"]).sum() / total_weight
+            # Laspeyres Price Relative = (Current Median / Base Period Tariff) * 100
+            price_relative = round((median_fare / base_tariff) * 100.0, 2)
+            
+            # Dynamic Surge Classification
+            if price_relative >= 135.0:
+                surge_status = "Surge Spike"
+            elif price_relative >= 105.0:
+                surge_status = "Moderate"
+            else:
+                surge_status = "Optimal Base"
 
-# 5. Status Indicators (Green <= +5%, Yellow +5% to +15%, Red > +15%)
-def get_status(surge):
-    if surge > 15: return "red"
-    if surge > 5: return "yellow"
-    return "green"
+            results[corridor]["horizons"][days] = {
+                "median_fare": round(median_fare, 2),
+                "price_relative": price_relative,
+                "surge_status": surge_status
+            }
 
-summary["indicator"] = summary["surge_pct"].apply(get_status)
+            # Add to traffic-weighted national composite index
+            national_composite[days] += price_relative * weight
 
-# 6. Horizon Dynamic Decay (1d vs 7d vs 15d)
-horizon_map = df.groupby("advance_days")["fare_inr"].mean().to_dict()
-h_1d = horizon_map.get(1, 6800)
-h_7d = horizon_map.get(7, 5100)
-h_15d = horizon_map.get(15, 4200)
+            # Record calculation in database
+            cursor.execute("""
+            INSERT INTO computed_price_index 
+            (computed_at, corridor, advance_days, median_fare, base_fare, price_relative, laspeyres_index, surge_status)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            """, (now, corridor, days, median_fare, base_tariff, price_relative, round(price_relative * weight, 2), surge_status))
 
-# Store processed index in Database
-summary.to_sql("route_index_summary", conn, if_exists="replace", index=False)
-conn.close()
+    conn.commit()
+    conn.close()
 
-# 7. Output JSON for Backend API and Frontend
-payload = {
-    "current_index": round(overall_index, 1),
-    "monthly_change": round(overall_index - 100, 1),
-    "yearly_change": 12.7,
-    "avg_fare": int(df["fare_inr"].mean()),
-    "total_quotes": len(df),
-    "horizon_fares": {
-        "d1": int(h_1d),
-        "d7": int(h_7d),
-        "d15": int(h_15d)
-    },
-    "routes": summary.to_dict(orient="records"),
-    "raw_flights": df.to_dict(orient="records")
-}
+    for d in national_composite:
+        national_composite[d] = round(national_composite[d], 2)
 
-with open("dashboard_data.json", "w") as f:
-    json.dump(payload, f, indent=2)
+    return {"national_composite_index": national_composite, "corridors": results}
 
-print("\n================ PERSON 3: AIRFARE PRICE INDEX ================")
-print(f">> Overall Index: {overall_index:.1f}")
-for _, r in summary.head(4).iterrows():
-    print(f">> {r['route']}: {r['route_index']:.1f} ({r['surge_pct']:+.1f}%) [{r['indicator'].upper()}]")
-print("===============================================================\n")
+if __name__ == "__main__":
+    data = compute_airfare_index()
+    print("=" * 60)
+    print("✈️  VIMANSUCHAK LASPEYRES PRICE INDEX ENGINE")
+    print("=" * 60)
+    print(f"National Composite Index (T+1 Immediate): {data['national_composite_index'][1]}")
+    print(f"National Composite Index (T+7 Standard):  {data['national_composite_index'][7]}")
+    print(f"National Composite Index (T+15 Advance):  {data['national_composite_index'][15]}")
+    print(f"National Composite Index (T+30 Window):   {data['national_composite_index'][30]}")
+    print(f"National Composite Index (T+45 Long):     {data['national_composite_index'][45]}")
+    print("=" * 60)
+    print("✅ Index Calculation Successful.")
