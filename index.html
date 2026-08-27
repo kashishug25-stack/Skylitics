@@ -1,0 +1,667 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SKYLITICS — National Airfare Price Index</title>
+  <link rel="stylesheet" href="style.css?v=2" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%237dd3fc'><path d='M21 16v-2l-8-5V3.5c0-.83-.67-1.5-1.5-1.5S10 2.67 10 3.5V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z'/></svg>" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&family=Space+Grotesk:wght@500;600;700;800&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+  <!-- Fixed Crisp Backdrop -->
+  <div class="sky-backdrop"></div>
+
+  <div class="app-layout">
+    <!-- Top Mock Browser Bar -->
+    <div class="browser-pill-bar">
+      <span class="dot-red"></span>
+      <span class="dot-yellow"></span>
+      <span class="dot-green"></span>
+      <span class="bar-url" id="barUrl">skylitics.gov.in/airfare-intelligence</span>
+    </div>
+
+    <!-- Editorial Brand Header -->
+    <header class="hero-brand">
+      <div class="brand-crest-row">
+        <div class="crest-line"></div>
+        <div class="crest-plane-icon">
+          <svg viewBox="0 0 24 24" fill="#7dd3fc" stroke="#38bdf8" stroke-width="1.2">
+            <path d="M12 2L15 8L22 9L17 14L18 21L12 17L6 21L7 14L2 9L9 8L12 2Z"/>
+          </svg>
+        </div>
+        <div class="crest-line"></div>
+      </div>
+
+      <h1 class="brand-wordmark">SKY<span class="brand-separator">·</span>LITICS</h1>
+      <p class="brand-tagline">NATIONAL AIRFARE PRICE INDEX & DYNAMIC SURGE ENGINE</p>
+
+      <div class="hero-pill-row">
+        <span class="editorial-pill">MoSPI CPI Framework</span>
+        <span class="editorial-pill">Laspeyres Formula</span>
+        <span class="editorial-pill">DGCA Traffic Weighted</span>
+      </div>
+    </header>
+
+    <!-- VIEW 1: SEARCH VIEW -->
+    <div id="searchViewSection" class="view-transition">
+      <div class="top-row-grid">
+        <section class="frosted-card query-card">
+          <div class="card-title-row">
+            <div>
+              <h3>Corridor Intelligence Query</h3>
+              <span class="caption-text">Evaluate real-time sector indices, decay curves & carrier splits</span>
+            </div>
+          </div>
+
+          <form id="searchForm" class="query-form" onsubmit="handleSearch(event)">
+            <div class="form-duo">
+              <div class="input-group">
+                <label for="origin">Departure Origin</label>
+                <select id="origin" required>
+                  <option value="" disabled selected>Select Origin Airport</option>
+                  <option value="DEL">DEL — New Delhi (IGI)</option>
+                  <option value="BOM">BOM — Mumbai (CSMI)</option>
+                  <option value="BLR">BLR — Bengaluru (KIA)</option>
+                  <option value="HYD">HYD — Hyderabad (RGIA)</option>
+                  <option value="CCU">CCU — Kolkata (NSCBI)</option>
+                  <option value="MAA">MAA — Chennai (MAA)</option>
+                  <option value="GOI">GOI — Goa (Dabolim)</option>
+                  <option value="PAT">PAT — Patna (JPNI)</option>
+                  <option value="IXB">IXB — Bagdogra (IXB)</option>
+                </select>
+              </div>
+
+              <div class="input-group">
+                <label for="destination">Arrival Destination</label>
+                <select id="destination" required>
+                  <option value="" disabled selected>Select Destination Airport</option>
+                  <option value="BOM">BOM — Mumbai (CSMI)</option>
+                  <option value="DEL">DEL — New Delhi (IGI)</option>
+                  <option value="BLR">BLR — Bengaluru (KIA)</option>
+                  <option value="HYD">HYD — Hyderabad (RGIA)</option>
+                  <option value="CCU">CCU — Kolkata (NSCBI)</option>
+                  <option value="MAA">MAA — Chennai (MAA)</option>
+                  <option value="GOI">GOI — Goa (Dabolim)</option>
+                  <option value="PAT">PAT — Patna (JPNI)</option>
+                  <option value="IXB">IXB — Bagdogra (IXB)</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="form-duo">
+              <div class="input-group">
+                <label for="cabinClass">Cabin Class</label>
+                <select id="cabinClass" required>
+                  <option value="Economy" selected>Economy Class</option>
+                  <option value="Premium Economy">Premium Economy</option>
+                  <option value="Business">Business Class</option>
+                  <option value="First Class">First Class</option>
+                </select>
+              </div>
+
+              <div class="input-group">
+                <label for="travelDate">Booking Horizon</label>
+                <select id="travelDate" required>
+                  <option value="1">1-Day Ahead (Immediate Surge)</option>
+                  <option value="7" selected>7-Days Ahead (Standard Window)</option>
+                  <option value="15">15-Days Ahead (Advance Window)</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="btn-group">
+              <button type="submit" class="btn btn-primary">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M22 2L11 13"/><path d="M22 2l-7 20-4-9-9-4 20-7z"/></svg>
+                Compute Sector Intelligence
+              </button>
+              <button type="button" class="btn btn-outline" onclick="exportMoSPIData()">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                1-Click MoSPI CSV
+              </button>
+            </div>
+          </form>
+        </section>
+
+        <!-- Market Matrix -->
+        <section class="frosted-card snapshot-card">
+          <div class="card-title-row">
+            <div>
+              <h3>Market Basket Matrix</h3>
+              <span class="caption-text">National ingestion status</span>
+            </div>
+            <span class="live-tag"><span class="pulse-circle"></span> Live Sync</span>
+          </div>
+
+          <div class="matrix-stack">
+            <div class="matrix-cell">
+              <span class="m-label">Basket Scope</span>
+              <span class="m-val">Pan-India High Density Corridors</span>
+            </div>
+            <div class="matrix-cell">
+              <span class="m-label">Laspeyres Benchmark Base</span>
+              <span class="m-val highlight-blue">100.00</span>
+            </div>
+            <div class="matrix-cell">
+              <span class="m-label">Average 1-Day Surge Premium</span>
+              <span class="m-val highlight-amber">+38.4% ▲</span>
+            </div>
+            <div class="matrix-cell">
+              <span class="m-label">Weighting Standard</span>
+              <span class="m-val">DGCA Seat-KM Density</span>
+            </div>
+          </div>
+        </section>
+      </div>
+    </div>
+
+    <!-- VIEW 2: FULL RESULTS DASHBOARD -->
+    <div id="resultsViewSection" class="view-transition" style="display: none;">
+      <div class="results-top-nav">
+        <button type="button" class="btn btn-back" onclick="returnToSearch()">
+          ← Modify Corridor Query
+        </button>
+        <div class="corridor-active-pill">
+          <span id="activeCorridorText">GOI ➔ DEL (Economy · 7d Horizon)</span>
+        </div>
+        <button type="button" class="btn btn-outline-sm" onclick="exportMoSPIData()">
+          📥 Export MoSPI CSV
+        </button>
+      </div>
+
+      <!-- Horizon 1d vs 7d vs 15d Cards -->
+      <section class="horizon-cards-grid">
+        <div class="route-snapshot-card">
+          <div class="rc-top">
+            <span class="carrier-badge carrier-indigo">IndiGo · Active</span>
+            <span class="advance-pill">1d Advance</span>
+          </div>
+          <div class="rc-airports">
+            <h3 id="rcOrigin1">GOI</h3>
+            <span class="plane-connector">✈</span>
+            <h3 id="rcDest1">DEL</h3>
+          </div>
+          <span class="rc-date" id="rcDate1">Travel Date: --</span>
+          <div class="rc-fare-row">
+            <div>
+              <span class="rc-fare-label">SURGE TARIFF</span>
+              <h2 class="rc-fare-val" id="rcFare1">₹ --</h2>
+            </div>
+            <span class="delta-pill delta-surge" id="rcSurge1">+55.0% ▲</span>
+          </div>
+        </div>
+
+        <div class="route-snapshot-card highlight-card">
+          <div class="rc-top">
+            <span class="carrier-badge carrier-akasa">Akasa Air · Active</span>
+            <span class="advance-pill">7d Advance</span>
+          </div>
+          <div class="rc-airports">
+            <h3 id="rcOrigin7">GOI</h3>
+            <span class="plane-connector">✈</span>
+            <h3 id="rcDest7">DEL</h3>
+          </div>
+          <span class="rc-date" id="rcDate7">Travel Date: --</span>
+          <div class="rc-fare-row">
+            <div>
+              <span class="rc-fare-label">STANDARD TARIFF</span>
+              <h2 class="rc-fare-val" id="rcFare7">₹ --</h2>
+            </div>
+            <span class="delta-pill delta-moderate" id="rcSurge7">+12.0% ▲</span>
+          </div>
+        </div>
+
+        <div class="route-snapshot-card">
+          <div class="rc-top">
+            <span class="carrier-badge carrier-airindia">Air India · Active</span>
+            <span class="advance-pill">15d Advance</span>
+          </div>
+          <div class="rc-airports">
+            <h3 id="rcOrigin15">GOI</h3>
+            <span class="plane-connector">✈</span>
+            <h3 id="rcDest15">DEL</h3>
+          </div>
+          <span class="rc-date" id="rcDate15">Travel Date: --</span>
+          <div class="rc-fare-row">
+            <div>
+              <span class="rc-fare-label">ADVANCE TARIFF</span>
+              <h2 class="rc-fare-val" id="rcFare15">₹ --</h2>
+            </div>
+            <span class="delta-pill delta-discount" id="rcSurge15">-6.0% ▼</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- Stat Quad -->
+      <section class="stat-quad-grid">
+        <div class="frosted-card stat-card">
+          <div class="sc-top">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#0284c7" stroke-width="2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+            <span class="delta-pill" id="fareDeltaPill">-- %</span>
+          </div>
+          <span class="sc-label">Average Sector Tariff</span>
+          <h2 class="sc-val" id="displayFare">₹ --</h2>
+          <span class="sc-sub" id="displayCabin">Economy</span>
+        </div>
+
+        <div class="frosted-card stat-card">
+          <div class="sc-top">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#0284c7" stroke-width="2"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>
+            <span class="delta-pill delta-surge" id="indexDeltaPill">+0.0% ▲</span>
+          </div>
+          <span class="sc-label">Laspeyres Price Relative</span>
+          <h2 class="sc-val" id="displayRelative">--</h2>
+          <span class="sc-sub">Base Relative = 100.00</span>
+        </div>
+
+        <div class="frosted-card stat-card">
+          <div class="sc-top">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#0284c7" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            <span class="status-dot" id="statusDot"></span>
+          </div>
+          <span class="sc-label">Surge Assessment</span>
+          <h2 class="sc-val" id="displayStatus">Standby</h2>
+          <span class="sc-sub" id="displaySubtext">Live DGCA evaluation</span>
+        </div>
+
+        <div class="frosted-card stat-card">
+          <div class="sc-top">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#0284c7" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
+            <span class="delta-pill delta-discount" id="decayDeltaPill">-14.5% ▼</span>
+          </div>
+          <span class="sc-label">Advance Booking Gain</span>
+          <h2 class="sc-val" id="displayDecay">₹ --</h2>
+          <span class="sc-sub">15-Day vs 1-Day Horizon</span>
+        </div>
+      </section>
+
+      <!-- Full-Width Chart -->
+      <section class="frosted-card full-width-chart-card">
+        <div class="card-title-row">
+          <div>
+            <h3>Temporal Price Decay Curve (1d vs 7d vs 15d)</h3>
+            <span class="caption-text">Laspeyres geometric pricing projection across advance booking horizons</span>
+          </div>
+          <span class="pill-outline">Laspeyres Curve</span>
+        </div>
+        <div class="canvas-holder">
+          <canvas id="decayChart"></canvas>
+        </div>
+      </section>
+
+      <!-- Full-Width Flight Strips -->
+      <section class="frosted-card full-width-flights-section">
+        <div class="card-title-row">
+          <div>
+            <h3 id="scheduleTitle">Verified Scheduled Flight Quotes</h3>
+            <span class="caption-text" id="scheduleSub">Click any flight card to inspect detailed tariff composition</span>
+          </div>
+        </div>
+        <div class="flight-strips-full-list" id="flightListContainer"></div>
+      </section>
+    </div>
+  </div>
+
+  <!-- Interactive Flight Detail Popup Modal -->
+  <div id="flightModal" class="modal-overlay" onclick="closeModal(event)">
+    <div class="modal-card" onclick="event.stopPropagation()">
+      <div class="modal-header">
+        <div class="modal-carrier-info">
+          <div id="modalLogoAvatar" class="carrier-avatar" style="width: 40px; height: 40px; font-size: 1.1rem;">✈</div>
+          <div>
+            <h3 id="modalCarrierName">IndiGo Airlines</h3>
+            <span id="modalFlightNumber" class="modal-flight-code">6E-5021 · Nonstop</span>
+          </div>
+        </div>
+        <button class="modal-close-btn" onclick="closeModalDirect()">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="modal-fare-breakdown">
+          <div class="modal-row">
+            <span>Base Airline Fare:</span>
+            <strong id="modalBaseFare">₹0</strong>
+          </div>
+          <div class="modal-row">
+            <span>Fuel Surcharge & DGCA Cess:</span>
+            <strong id="modalFuelSurcharge">₹0</strong>
+          </div>
+          <div class="modal-row">
+            <span>User Development Fee (UDF):</span>
+            <strong id="modalUDF">₹0</strong>
+          </div>
+          <div class="modal-row modal-total-row">
+            <span>Total Published Tariff:</span>
+            <strong id="modalTotalFare" class="modal-highlight-fare">₹0</strong>
+          </div>
+        </div>
+        <div class="modal-surge-alert-box" id="modalSurgeBox">
+          <span id="modalSurgeNotice">Surge Alert: Tariff is running above benchmark base rate.</span>
+        </div>
+      </div>
+    </div>
+  </div>
+<script>
+    let decayChartInstance = null;
+
+    // Clean Simple Plane Avatars with Brand Colors
+    const carrierDB = [
+      {
+        name: "IndiGo",
+        code: "6E-5021",
+        dep: "08:45 AM",
+        arr: "11:00 AM",
+        dur: "2 hr 15 min",
+        stop: "Nonstop",
+        co2: "89 kg CO2e",
+        factor: 0.98,
+        logoBg: "#0284c7"
+      },
+      {
+        name: "Air India",
+        code: "AI-805",
+        dep: "09:00 AM",
+        arr: "11:15 AM",
+        dur: "2 hr 15 min",
+        stop: "Nonstop",
+        co2: "103 kg CO2e",
+        factor: 1.05,
+        logoBg: "#dc2626"
+      },
+      {
+        name: "Akasa Air",
+        code: "QP-1311",
+        dep: "09:20 AM",
+        arr: "11:40 AM",
+        dur: "2 hr 20 min",
+        stop: "Nonstop",
+        co2: "88 kg CO2e",
+        factor: 0.94,
+        logoBg: "#ea580c"
+      },
+      {
+        name: "SpiceJet",
+        code: "SG-8169",
+        dep: "06:30 PM",
+        arr: "08:50 PM",
+        dur: "2 hr 20 min",
+        stop: "Nonstop",
+        co2: "92 kg CO2e",
+        factor: 1.02,
+        logoBg: "#d97706"
+      }
+    ];
+
+    function handleSearch(e) {
+      e.preventDefault();
+      const origin = document.getElementById('origin').value;
+      const destination = document.getElementById('destination').value;
+      const cabin = document.getElementById('cabinClass').value;
+      const days = parseInt(document.getElementById('travelDate').value);
+
+      if (!origin || !destination) {
+        alert("Please select both Origin and Destination.");
+        return;
+      }
+      if (origin === destination) {
+        alert("Origin and Destination cannot be the same airport.");
+        return;
+      }
+
+      // Smooth Page View Swap
+      document.getElementById('searchViewSection').style.display = 'none';
+      document.getElementById('resultsViewSection').style.display = 'block';
+      document.getElementById('barUrl').innerText = `skylitics.gov.in/intel?sector=${origin}-${destination}&cabin=${cabin}&horizon=${days}d`;
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+
+      runAnalysis(origin, destination, cabin, days);
+    }
+
+    function returnToSearch() {
+      document.getElementById('resultsViewSection').style.display = 'none';
+      document.getElementById('searchViewSection').style.display = 'block';
+      document.getElementById('barUrl').innerText = "skylitics.gov.in/airfare-intelligence";
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function runAnalysis(origin, dest, cabin, days) {
+      let classMult = 1.0;
+      if (cabin === "Premium Economy") classMult = 1.45;
+      if (cabin === "Business") classMult = 2.60;
+      if (cabin === "First Class") classMult = 4.20;
+
+      const baseFare = 4200 * classMult;
+      const fare1d = Math.round(baseFare * 1.55);
+      const fare7d = Math.round(baseFare * 1.12);
+      const fare15d = Math.round(baseFare * 0.94);
+
+      const activeFare = days === 1 ? fare1d : (days === 7 ? fare7d : fare15d);
+      const indexValue = ((activeFare / baseFare) * 100).toFixed(1);
+      const deltaPercent = (((activeFare - baseFare) / baseFare) * 100).toFixed(1);
+      const savings15d = fare1d - fare15d;
+
+      const now = new Date();
+      const d1 = new Date(now); d1.setDate(d1.getDate() + 1);
+      const d7 = new Date(now); d7.setDate(d7.getDate() + 7);
+      const d15 = new Date(now); d15.setDate(d15.getDate() + 15);
+      const fDate = (d) => d.toISOString().split('T')[0];
+
+      document.getElementById('activeCorridorText').innerText = `${origin} ➔ ${dest} · ${cabin} (${days}d Horizon Window)`;
+
+      // Horizon Cards
+      document.getElementById('rcOrigin1').innerText = origin;
+      document.getElementById('rcDest1').innerText = dest;
+      document.getElementById('rcDate1').innerText = `Travel Date: ${fDate(d1)}`;
+      document.getElementById('rcFare1').innerText = `₹${fare1d.toLocaleString('en-IN')}`;
+
+      document.getElementById('rcOrigin7').innerText = origin;
+      document.getElementById('rcDest7').innerText = dest;
+      document.getElementById('rcDate7').innerText = `Travel Date: ${fDate(d7)}`;
+      document.getElementById('rcFare7').innerText = `₹${fare7d.toLocaleString('en-IN')}`;
+
+      document.getElementById('rcOrigin15').innerText = origin;
+      document.getElementById('rcDest15').innerText = dest;
+      document.getElementById('rcDate15').innerText = `Travel Date: ${fDate(d15)}`;
+      document.getElementById('rcFare15').innerText = `₹${fare15d.toLocaleString('en-IN')}`;
+
+      // Stat Quad
+      document.getElementById('displayFare').innerText = `₹${activeFare.toLocaleString('en-IN')}`;
+      document.getElementById('displayCabin').innerText = `${cabin} · Active`;
+      document.getElementById('displayRelative').innerText = indexValue;
+      document.getElementById('displayDecay').innerText = `₹${savings15d.toLocaleString('en-IN')}`;
+
+      const fareDelta = document.getElementById('fareDeltaPill');
+      const indexDelta = document.getElementById('indexDeltaPill');
+      if (deltaPercent >= 0) {
+        fareDelta.className = "delta-pill delta-surge";
+        fareDelta.innerText = `+${deltaPercent}% ▲`;
+        indexDelta.className = "delta-pill delta-surge";
+        indexDelta.innerText = `+${(indexValue - 100).toFixed(1)}% ▲`;
+      } else {
+        fareDelta.className = "delta-pill delta-discount";
+        fareDelta.innerText = `${deltaPercent}% ▼`;
+        indexDelta.className = "delta-pill delta-discount";
+        indexDelta.innerText = `${(indexValue - 100).toFixed(1)}% ▼`;
+      }
+
+      const statusText = document.getElementById('displayStatus');
+      const statusDot = document.getElementById('statusDot');
+      const subText = document.getElementById('displaySubtext');
+
+      if (indexValue >= 135) {
+        statusText.innerText = "Surge Spike";
+        statusText.style.color = "#dc2626";
+        statusDot.style.background = "#dc2626";
+        subText.innerText = "Peak dynamic tariff surge";
+      } else if (indexValue >= 105) {
+        statusText.innerText = "Moderate";
+        statusText.style.color = "#d97706";
+        statusDot.style.background = "#d97706";
+        subText.innerText = "Within normal seasonal variation";
+      } else {
+        statusText.innerText = "Optimal Base";
+        statusText.style.color = "#059669";
+        statusDot.style.background = "#059669";
+        subText.innerText = "Competitive standard market tariff";
+      }
+
+      document.getElementById('scheduleTitle').innerText = `${origin} ➔ ${dest} Live Ingestion Timetable`;
+      document.getElementById('scheduleSub').innerText = `Click any carrier card to inspect fare breakup (${cabin} · ${days}d horizon)`;
+
+      // Populate Flight Rows With Simple Plane Avatar Logos & Delta Badges
+      const container = document.getElementById('flightListContainer');
+      container.innerHTML = carrierDB.map((c, index) => {
+        const flightFare = Math.round(activeFare * c.factor);
+        const priceIncreaseAmt = flightFare - Math.round(baseFare);
+        const priceIncreasePct = (((flightFare - baseFare) / baseFare) * 100).toFixed(1);
+        const isUp = priceIncreaseAmt >= 0;
+
+        return `
+          <div class="flight-strip-full-row" onclick="openFlightModal(${index}, ${flightFare}, ${Math.round(baseFare)})">
+            <div class="f-col-brand">
+              <div class="carrier-avatar" style="background: ${c.logoBg}">✈</div>
+              <div>
+                <strong class="carrier-title">${c.name}</strong>
+                <small class="flight-no-sub">${c.code}</small>
+              </div>
+            </div>
+
+            <div class="f-col-times">
+              <div class="time-block">
+                <span class="flight-time-large">${c.dep}</span>
+                <span class="airport-code">${origin}</span>
+              </div>
+              <div class="flight-duration-track">
+                <span class="duration-label">${c.dur}</span>
+                <div class="duration-bar"></div>
+                <span class="nonstop-badge">${c.stop}</span>
+              </div>
+              <div class="time-block">
+                <span class="flight-time-large">${c.arr}</span>
+                <span class="airport-code">${dest}</span>
+              </div>
+            </div>
+
+            <div class="f-col-emissions">
+              <span class="co2-tag">${c.co2}</span>
+              <small class="co2-subtext">-13% emissions</small>
+            </div>
+
+            <div class="f-col-price">
+              <div class="price-val-wrap">
+                <span class="price-figure">₹${flightFare.toLocaleString('en-IN')}</span>
+                <span class="price-cabin-label">${cabin}</span>
+              </div>
+              <div class="surge-delta-chip ${isUp ? 'chip-surge' : 'chip-discount'}">
+                ${isUp ? `+₹${priceIncreaseAmt.toLocaleString('en-IN')} (+${priceIncreasePct}%) ▲` : `-₹${Math.abs(priceIncreaseAmt).toLocaleString('en-IN')} (${priceIncreasePct}%) ▼`}
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      renderChart([fare1d, fare7d, fare15d]);
+    }
+
+    function renderChart(fares) {
+      const ctx = document.getElementById('decayChart').getContext('2d');
+      if (decayChartInstance) decayChartInstance.destroy();
+
+      const gradient = ctx.createLinearGradient(0, 0, 0, 240);
+      gradient.addColorStop(0, 'rgba(2, 132, 199, 0.25)');
+      gradient.addColorStop(1, 'rgba(2, 132, 199, 0.0)');
+
+      decayChartInstance = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: ['1-Day Ahead (Immediate Surge)', '7-Days Ahead (Standard Window)', '15-Days Ahead (Advance Purchase)'],
+          datasets: [{
+            data: fares,
+            borderColor: '#0284c7',
+            borderWidth: 3,
+            backgroundColor: gradient,
+            fill: true,
+            tension: 0.35,
+            pointRadius: 6,
+            pointBackgroundColor: '#0369a1',
+            pointBorderColor: '#ffffff',
+            pointBorderWidth: 2
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              callbacks: {
+                label: (ctx) => ` Average Tariff: ₹${ctx.raw.toLocaleString('en-IN')}`
+              }
+            }
+          },
+          scales: {
+            y: {
+              grid: { color: 'rgba(0, 0, 0, 0.05)' },
+              ticks: { color: '#64748b', font: { family: 'Plus Jakarta Sans', size: 11 } }
+            },
+            x: {
+              grid: { display: false },
+              ticks: { color: '#334155', font: { family: 'Plus Jakarta Sans', weight: '700', size: 11 } }
+            }
+          }
+        }
+      });
+    }
+
+    function openFlightModal(carrierIndex, totalFare, baseFare) {
+      const carrier = carrierDB[carrierIndex];
+      const avatar = document.getElementById('modalLogoAvatar');
+      avatar.style.background = carrier.logoBg;
+      document.getElementById('modalCarrierName').innerText = `${carrier.name} Intelligence Breakdown`;
+      document.getElementById('modalFlightNumber').innerText = `${carrier.code} · Schedule Verified`;
+      
+      const fuelFee = Math.round(totalFare * 0.18);
+      const udfFee = Math.round(totalFare * 0.08);
+      const pureBase = totalFare - fuelFee - udfFee;
+
+      document.getElementById('modalBaseFare').innerText = `₹${pureBase.toLocaleString('en-IN')}`;
+      document.getElementById('modalFuelSurcharge').innerText = `₹${fuelFee.toLocaleString('en-IN')}`;
+      document.getElementById('modalUDF').innerText = `₹${udfFee.toLocaleString('en-IN')}`;
+      document.getElementById('modalTotalFare').innerText = `₹${totalFare.toLocaleString('en-IN')}`;
+
+      document.getElementById('flightModal').style.display = 'flex';
+    }
+
+    function closeModalDirect() {
+      document.getElementById('flightModal').style.display = 'none';
+    }
+
+    function closeModal(e) {
+      if (e.target.id === 'flightModal') {
+        document.getElementById('flightModal').style.display = 'none';
+      }
+    }
+
+    function exportMoSPIData() {
+      const csvContent = "data:text/csv;charset=utf-8," 
+        + "Timestamp,Corridor,Origin,Destination,CabinClass,AdvanceHorizon,LaspeyresIndex,BaseTariffINR,LiveTariffINR,SurgeStatus,TrafficWeight\n"
+        + "2026-08-27 10:00:00,GOI-DEL,GOI,DEL,Business,1d,155.0,10920,16926,Surge Spike,0.185\n"
+        + "2026-08-27 10:00:00,GOI-DEL,GOI,DEL,Business,7d,112.0,10920,12230,Moderate,0.185\n"
+        + "2026-08-27 10:00:00,GOI-DEL,GOI,DEL,Business,15d,94.0,10920,10264,Optimal Base,0.185\n"
+        + "2026-08-27 10:00:00,DEL-BOM,DEL,BOM,Economy,1d,155.0,4200,6510,Surge Spike,0.185\n"
+        + "2026-08-27 10:00:00,DEL-BLR,DEL,BLR,Economy,7d,108.5,4800,5208,Moderate,0.142\n"
+        + "2026-08-27 10:00:00,BOM-BLR,BOM,BLR,Economy,15d,92.4,3600,3326,Optimal Base,0.098";
+
+      const encodedUri = encodeURI(csvContent);
+      const link = document.createElement("a");
+      link.setAttribute("href", encodedUri);
+      link.setAttribute("download", "MoSPI_National_CPI_Airfare_Report.csv");
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+  </script>
+</body>
+</html>
