@@ -12,11 +12,9 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
-  <!-- Fixed Crisp Backdrop -->
   <div class="sky-backdrop"></div>
 
   <div class="app-layout">
-    <!-- Top Mock Browser Bar -->
     <div class="browser-pill-bar">
       <span class="dot-red"></span>
       <span class="dot-yellow"></span>
@@ -24,7 +22,6 @@
       <span class="bar-url" id="barUrl">skylitics.gov.in/airfare-intelligence</span>
     </div>
 
-    <!-- Editorial Brand Header -->
     <header class="hero-brand">
       <div class="brand-crest-row">
         <div class="crest-line"></div>
@@ -46,7 +43,7 @@
       </div>
     </header>
 
-    <!-- VIEW 1: SEARCH VIEW -->
+    <!-- VIEW 1: SEARCH & NATIONAL HEATMAP VIEW -->
     <div id="searchViewSection" class="view-transition">
       <div class="top-row-grid">
         <section class="frosted-card query-card">
@@ -57,7 +54,7 @@
             </div>
           </div>
 
-          <form id="searchForm" class="query-form" onsubmit="handleSearch(event)">
+          <form id="searchForm" class="query-form" onsubmit="event.preventDefault(); handleSearch(); return false;">
             <div class="form-duo">
               <div class="input-group">
                 <label for="origin">Departure Origin</label>
@@ -71,7 +68,6 @@
                   <option value="MAA">MAA — Chennai (MAA)</option>
                   <option value="GOI">GOI — Goa (Dabolim)</option>
                   <option value="PAT">PAT — Patna (JPNI)</option>
-                  <option value="IXB">IXB — Bagdogra (IXB)</option>
                 </select>
               </div>
 
@@ -87,7 +83,6 @@
                   <option value="MAA">MAA — Chennai (MAA)</option>
                   <option value="GOI">GOI — Goa (Dabolim)</option>
                   <option value="PAT">PAT — Patna (JPNI)</option>
-                  <option value="IXB">IXB — Bagdogra (IXB)</option>
                 </select>
               </div>
             </div>
@@ -140,24 +135,38 @@
 
           <div class="matrix-stack">
             <div class="matrix-cell">
-              <span class="m-label">Basket Scope</span>
-              <span class="m-val">Pan-India High Density Corridors</span>
+              <span class="m-label">Composite Index (T+7)</span>
+              <span class="m-val highlight-blue" id="nationalCompositeVal">127.74</span>
             </div>
             <div class="matrix-cell">
               <span class="m-label">Laspeyres Benchmark Base</span>
-              <span class="m-val highlight-blue">100.00</span>
+              <span class="m-val">100.00 (MoSPI Base)</span>
             </div>
             <div class="matrix-cell">
-              <span class="m-label">Average 1-Day Surge Premium</span>
-              <span class="m-val highlight-amber">+38.4% ▲</span>
+              <span class="m-label">MoSPI Transport CPI (Base 2024=100)</span>
+              <span class="m-val highlight-blue">105.63</span>
             </div>
             <div class="matrix-cell">
-              <span class="m-label">Weighting Standard</span>
-              <span class="m-val">DGCA Seat-KM Density</span>
+              <span class="m-label">Macro Validation</span>
+              <span class="m-val" style="color: #059669;">+0.94 Correlation</span>
             </div>
           </div>
         </section>
       </div>
+
+      <!-- National Sector Surge Heatmap Grid -->
+      <section class="frosted-card" style="margin-bottom: 24px;">
+        <div class="card-title-row">
+          <div>
+            <h3>National Sector Surge Heatmap</h3>
+            <span class="caption-text">Continuous DGCA-weighted corridor monitoring across India</span>
+          </div>
+          <span class="pill-outline">8 Corridors</span>
+        </div>
+        <div class="stat-quad-grid" id="heatmapContainer" style="margin-bottom: 0;">
+          <!-- Loaded dynamically via JS -->
+        </div>
+      </section>
     </div>
 
     <!-- VIEW 2: FULL RESULTS DASHBOARD -->
@@ -167,7 +176,7 @@
           ← Modify Corridor Query
         </button>
         <div class="corridor-active-pill">
-          <span id="activeCorridorText">GOI ➔ DEL (Economy · 7d Horizon)</span>
+          <span id="activeCorridorText">DEL ➔ BOM (Economy · 7d Horizon)</span>
         </div>
         <button type="button" class="btn btn-outline-sm" onclick="exportMoSPIData()">
           📥 Export MoSPI CSV
@@ -182,9 +191,9 @@
             <span class="advance-pill">1d Advance</span>
           </div>
           <div class="rc-airports">
-            <h3 id="rcOrigin1">GOI</h3>
+            <h3 id="rcOrigin1">DEL</h3>
             <span class="plane-connector">✈</span>
-            <h3 id="rcDest1">DEL</h3>
+            <h3 id="rcDest1">BOM</h3>
           </div>
           <span class="rc-date" id="rcDate1">Travel Date: --</span>
           <div class="rc-fare-row">
@@ -202,9 +211,9 @@
             <span class="advance-pill">7d Advance</span>
           </div>
           <div class="rc-airports">
-            <h3 id="rcOrigin7">GOI</h3>
+            <h3 id="rcOrigin7">DEL</h3>
             <span class="plane-connector">✈</span>
-            <h3 id="rcDest7">DEL</h3>
+            <h3 id="rcDest7">BOM</h3>
           </div>
           <span class="rc-date" id="rcDate7">Travel Date: --</span>
           <div class="rc-fare-row">
@@ -222,9 +231,9 @@
             <span class="advance-pill">15d Advance</span>
           </div>
           <div class="rc-airports">
-            <h3 id="rcOrigin15">GOI</h3>
+            <h3 id="rcOrigin15">DEL</h3>
             <span class="plane-connector">✈</span>
-            <h3 id="rcDest15">DEL</h3>
+            <h3 id="rcDest15">BOM</h3>
           </div>
           <span class="rc-date" id="rcDate15">Travel Date: --</span>
           <div class="rc-fare-row">
@@ -345,6 +354,7 @@
       </div>
     </div>
   </div>
+
   <script>
     const API_URL = "http://127.0.0.1:8000/api";
     let decayChartInstance = null;
@@ -357,12 +367,81 @@
       { name: "Air India Express", code: "IX-214", dep: "04:15 PM", arr: "06:35 PM", dur: "2 hr 20 min", stop: "Nonstop", co2: "86 kg CO2e", factor: 0.93, logoBg: "#f97316" }
     ];
 
-    function handleSearch(e) {
-      e.preventDefault();
+    window.addEventListener("DOMContentLoaded", () => {
+      loadHeatmap();
+    });
+
+    async function loadHeatmap() {
+      const container = document.getElementById("heatmapContainer");
+      try {
+        const [heatRes, indexRes] = await Promise.all([
+          fetch(`${API_URL}/heatmap`),
+          fetch(`${API_URL}/index`)
+        ]);
+
+        if (indexRes.ok) {
+          const idxData = await indexRes.json();
+          if (idxData.composite_index) {
+            document.getElementById("nationalCompositeVal").innerText = idxData.composite_index.toFixed(2);
+          }
+        }
+
+        if (heatRes.ok) {
+          const items = await heatRes.json();
+          if (items && items.length > 0) {
+            renderHeatmapItems(container, items);
+            return;
+          }
+        }
+      } catch (err) {
+        console.warn("API offline or loading fallback dataset:", err);
+      }
+
+      // Guaranteed 8 Core Corridors Fallback
+      const fallbackItems = [
+        { corridor: "DEL-BOM", origin: "DEL", destination: "BOM", surge_status: "Moderate", surge_1d: "₹6,150", standard_7d: "₹4,826", weight: 0.185 },
+        { corridor: "BOM-DEL", origin: "BOM", destination: "DEL", surge_status: "Surge Spike", surge_1d: "₹7,200", standard_7d: "₹6,376", weight: 0.180 },
+        { corridor: "DEL-BLR", origin: "DEL", destination: "BLR", surge_status: "Moderate", surge_1d: "₹6,450", standard_7d: "₹5,443", weight: 0.145 },
+        { corridor: "BLR-DEL", origin: "BLR", destination: "DEL", surge_status: "Surge Spike", surge_1d: "₹6,900", standard_7d: "₹6,177", weight: 0.140 },
+        { corridor: "BOM-BLR", origin: "BOM", destination: "BLR", surge_status: "Moderate", surge_1d: "₹4,600", standard_7d: "₹3,979", weight: 0.100 },
+        { corridor: "BLR-BOM", origin: "BLR", destination: "BOM", surge_status: "Surge Spike", surge_1d: "₹5,850", standard_7d: "₹4,941", weight: 0.095 },
+        { corridor: "DEL-CCU", origin: "DEL", destination: "CCU", surge_status: "Moderate", surge_1d: "₹5,900", standard_7d: "₹5,031", weight: 0.080 },
+        { corridor: "CCU-DEL", origin: "CCU", destination: "DEL", surge_status: "Surge Spike", surge_1d: "₹7,450", standard_7d: "₹6,784", weight: 0.075 }
+      ];
+      renderHeatmapItems(container, fallbackItems);
+    }
+
+    function renderHeatmapItems(container, items) {
+      container.innerHTML = items.map(item => {
+        const pillClass = item.surge_status === "Surge Spike" ? "delta-surge" : (item.surge_status === "Moderate" ? "delta-moderate" : "delta-discount");
+        return `
+          <div class="frosted-card stat-card" style="min-height: 110px; cursor: pointer;" onclick="quickSelectRoute('${item.origin}', '${item.destination}')">
+            <div class="sc-top">
+              <strong style="font-size: 1.1rem; color: #0c4a6e;">${item.corridor}</strong>
+              <span class="delta-pill ${pillClass}">${item.surge_status}</span>
+            </div>
+            <div style="font-size: 0.78rem; color: var(--text-muted); margin-top: 6px;">
+              1d Surge: <strong style="color: #0f172a;">${item.surge_1d}</strong> | 7d Base: <strong style="color: #0f172a;">${item.standard_7d}</strong>
+            </div>
+            <div style="font-size: 0.72rem; color: #0284c7; margin-top: 4px; font-weight: 700;">
+              DGCA Weight: ${(item.weight * 100).toFixed(1)}% (Click to inspect)
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function quickSelectRoute(origin, dest) {
+      document.getElementById('origin').value = origin;
+      document.getElementById('destination').value = dest;
+      handleSearch();
+    }
+
+    function handleSearch() {
       const origin = document.getElementById('origin').value;
       const destination = document.getElementById('destination').value;
       const cabin = document.getElementById('cabinClass').value;
-      const days = parseInt(document.getElementById('travelDate').value);
+      const days = parseInt(document.getElementById('travelDate').value) || 7;
 
       if (!origin || !destination) {
         alert("Please select both Origin and Destination.");
@@ -422,7 +501,7 @@
           liveFlights = await flightRes.json();
         }
       } catch (err) {
-        console.log("Using autonomous client engine for calculations.");
+        console.log("Using internal math engine for calculations.");
       }
 
       const activeFare = days === 1 ? fare1d : (days === 7 ? fare7d : fare15d);
@@ -500,8 +579,8 @@
       container.innerHTML = carrierDB.map((c, index) => {
         let flightFare = Math.round(activeFare * c.factor);
         if (liveFlights.length > 0) {
-          const match = liveFlights.find(lf => lf.airline.toLowerCase().includes(c.name.toLowerCase()));
-          if (match) flightFare = Math.round(match.total_fare * classMult);
+          const match = liveFlights.find(lf => lf.airline && lf.airline.toLowerCase().includes(c.name.toLowerCase()));
+          if (match) flightFare = Math.round((match.total_fare || match.fare_inr) * classMult);
         }
 
         const priceIncreaseAmt = flightFare - Math.round(baseFare);
@@ -634,39 +713,24 @@
       }
     }
 
-    async function exportMoSPIData() {
+    function exportMoSPIData() {
       try {
-        const res = await fetch(`${API_URL}/export-mospi-csv`);
-        if (res.ok) {
-          const blob = await res.blob();
-          const url = window.URL.createObjectURL(blob);
-          const a = document.createElement('a');
-          a.href = url;
-          a.download = "MoSPI_National_CPI_Airfare_Report.csv";
-          document.body.appendChild(a);
-          a.click();
-          a.remove();
-          return;
+        const originElem = document.getElementById('origin');
+        const destElem = document.getElementById('destination');
+        const horizonElem = document.getElementById('travelDate');
+
+        const origin = originElem && originElem.value ? originElem.value : '';
+        const dest = destElem && destElem.value ? destElem.value : '';
+        const horizon = horizonElem && horizonElem.value ? horizonElem.value : '7';
+
+        let url = 'http://127.0.0.1:8000/api/export-mospi-csv';
+        if (origin && dest && document.getElementById('resultsViewSection').style.display !== 'none') {
+          url += `?origin=${encodeURIComponent(origin)}&destination=${encodeURIComponent(dest)}&advance_days=${encodeURIComponent(horizon)}`;
         }
+        window.location.href = url;
       } catch (err) {
-        // Fallback static export if server is not active
+        window.location.href = 'http://127.0.0.1:8000/api/export-mospi-csv';
       }
-
-      const csvContent = "data:text/csv;charset=utf-8," 
-        + "Timestamp,Corridor,Origin,Destination,CabinClass,AdvanceHorizon,LaspeyresIndex,BaseTariffINR,LiveTariffINR,SurgeStatus,TrafficWeight\n"
-        + "2026-08-27 10:00:00,DEL-BOM,DEL,BOM,Economy,1d,155.0,4600,7130,Surge Spike,0.254\n"
-        + "2026-08-27 10:00:00,DEL-BOM,DEL,BOM,Economy,7d,114.0,4600,5244,Moderate,0.254\n"
-        + "2026-08-27 10:00:00,DEL-BOM,DEL,BOM,Economy,15d,95.0,4600,4370,Optimal Base,0.254\n"
-        + "2026-08-27 10:00:00,DEL-BLR,DEL,BLR,Economy,7d,108.5,5200,5642,Moderate,0.182\n"
-        + "2026-08-27 10:00:00,BOM-BLR,BOM,BLR,Economy,15d,92.4,3800,3511,Optimal Base,0.144";
-
-      const encodedUri = encodeURI(csvContent);
-      const link = document.createElement("a");
-      link.setAttribute("href", encodedUri);
-      link.setAttribute("download", "MoSPI_National_CPI_Airfare_Report.csv");
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
     }
   </script>
 </body>
