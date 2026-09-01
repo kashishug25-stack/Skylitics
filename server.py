@@ -1,17 +1,19 @@
 import os
+import sqlite3
 import json
 import csv
 import io
-from datetime import datetime, timedelta
+from pathlib import Path
+from datetime import datetime
 from typing import Optional
 from fastapi import FastAPI, Query
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import StreamingResponse
+from fastapi.responses import StreamingResponse, FileResponse
+from fastapi.staticfiles import StaticFiles
 
 app = FastAPI(
     title="Skylitics - DGCA & MoSPI Airfare Intelligence API",
-    description="Official Laspeyres Airfare Price Index Engine & Sector Surge Monitoring",
-    version="2.4.0"
+    version="3.5.0"
 )
 
 app.add_middleware(
@@ -22,23 +24,24 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+DB_PATH = "airfare_intelligence.db"
 JSON_PATH = "dashboard_data.json"
 
-CORE_8_CORRIDORS = [
-    "DEL-BOM", "BOM-DEL", 
-    "DEL-BLR", "BLR-DEL", 
-    "BOM-BLR", "BLR-BOM", 
-    "DEL-CCU", "CCU-DEL"
-]
-
-DGCA_STATUTORY_METADATA = {
-    "source_agency": "Directorate General of Civil Aviation (DGCA)",
-    "ministry": "Ministry of Civil Aviation, Government of India",
-    "publication_reference": "Table 1.01: City-Pair Wise Scheduled Domestic Passenger Traffic Statistics",
-    "official_portal": "https://www.dgca.gov.in",
-    "baseline_methodology": "Laspeyres Fixed-Base Volume-Weighted Price Index",
-    "verification_status": "Statutorily Verified (MoSPI Transport CPI Framework)"
+CORRIDORS_8 = {
+    "DEL-BOM": 0.2299,
+    "DEL-BLR": 0.1651,
+    "BOM-BLR": 0.1305,
+    "DEL-CCU": 0.1158,
+    "BLR-HYD": 0.1000,
+    "MAA-DEL": 0.0953,
+    "DEL-GOI": 0.0889,
+    "DEL-PAT": 0.0745
 }
+
+def get_db():
+    conn = sqlite3.connect(DB_PATH)
+    conn.row_factory = sqlite3.Row
+    return conn
 
 def load_json_data():
     if os.path.exists(JSON_PATH):
@@ -50,121 +53,135 @@ def load_json_data():
     return {}
 
 @app.get("/")
-def root():
-    return {
-        "system": "Skylitics Airfare Intelligence Platform",
-        "status": "active",
-        "framework": "MoSPI CPI / DGCA Laspeyres Standard",
-        "data_provenance": DGCA_STATUTORY_METADATA,
-        "corridors_monitored": len(CORE_8_CORRIDORS)
-    }
+def serve_index():
+    if Path("index.html").exists():
+        return FileResponse("index.html")
+    return {"error": "index.html not found"}
 
 @app.get("/api/heatmap")
 def get_sector_heatmap():
-    data = load_json_data()
-    routes = data.get("routes", [])
-    raw_flights = data.get("raw_flights", [])
-    
-    selected_routes = [r for r in routes if r.get("route") in CORE_8_CORRIDORS]
-    if not selected_routes:
-        selected_routes = routes[:8]
-    
+    conn = get_db()
+    rows = conn.execute("""
+        SELECT origin, destination, CAST(advance_days AS INTEGER) AS advance_days, 
+               AVG(CAST(total_fare AS REAL)) AS avg_fare, 
+               COUNT(*) AS total_quotes
+        FROM cleaned_fare_quotes
+        WHERE CAST(total_fare AS REAL) BETWEEN 2500 AND 28000
+        GROUP BY origin, destination, CAST(advance_days AS INTEGER)
+    """).fetchall()
+    conn.close()
+
+    grouped = {}
+    for r in rows:
+        c = f"{r['origin']}-{r['destination']}"
+        if c not in grouped:
+            grouped[c] = {"origin": r["origin"], "destination": r["destination"], "horizons": {}}
+        grouped[c]["horizons"][r["advance_days"]] = {
+            "avg_fare": float(r["avg_fare"]),
+            "count": int(r["total_quotes"])
+        }
+
     heatmap_list = []
-    for r in selected_routes:
-        route_str = r.get("route", "")
-        origin, dest = route_str.split("-") if "-" in route_str else ("DEL", "BOM")
+    for corridor, weight in CORRIDORS_8.items():
+        orig, dest = corridor.split("-")
+        h = grouped.get(corridor, {}).get("horizons", {})
         
-        route_flights = [f for f in raw_flights if f.get("route") == route_str or (f.get("origin") == origin and f.get("destination") == dest)]
-        f_1d = [f.get("fare_inr", 0) for f in route_flights if f.get("advance_days") == 1]
-        f_7d = [f.get("fare_inr", 0) for f in route_flights if f.get("advance_days") == 7]
-        
-        base_p = float(r.get("base_price", 4000))
-        price_1d = int(sum(f_1d) / len(f_1d)) if f_1d else int(base_p * 1.45)
-        price_7d = int(sum(f_7d) / len(f_7d)) if f_7d else int(base_p * 1.10)
-        
-        surge_val = float(r.get("surge_pct", 0.0))
-        surge_status = "Surge Spike" if surge_val >= 20.0 else ("Moderate" if surge_val >= 5.0 else "Discount")
-            
+        base_fare = (
+            h.get(30, {}).get("avg_fare") or 
+            h.get(45, {}).get("avg_fare") or 
+            h.get(15, {}).get("avg_fare") or 
+            h.get(7, {}).get("avg_fare", 5400.0)
+        )
+        if not base_fare or base_fare < 2500 or base_fare > 28000:
+            base_fare = 5400.0
+
+        f1 = h.get(1, {}).get("avg_fare", base_fare * 1.35)
+        f7 = h.get(7, {}).get("avg_fare", base_fare * 1.08)
+        f15 = h.get(15, {}).get("avg_fare", base_fare * 0.96)
+        f30 = h.get(30, {}).get("avg_fare", base_fare)
+        f45 = h.get(45, {}).get("avg_fare", base_fare * 0.90)
+
+        p7_rel = round((f7 / base_fare) * 100, 1)
+        surge_status = "High" if p7_rel >= 135 else ("Moderate" if p7_rel >= 110 else "Optimal")
+
         heatmap_list.append({
-            "corridor": route_str,
-            "origin": origin,
+            "corridor": corridor,
+            "origin": orig,
             "destination": dest,
+            "weight": weight,
             "surge_status": surge_status,
-            "surge_1d": f"₹{price_1d:,}",
-            "standard_7d": f"₹{price_7d:,}",
-            "weight": float(r.get("weight", 0.05)),
-            "current_spot_fare": price_1d,
-            "surge_pct": surge_val
+            "surge_1d": f"₹{int(f1):,}",
+            "standard_7d": f"₹{int(f7):,}",
+            "surge_15d": f"₹{int(f15):,}",
+            "surge_30d": f"₹{int(f30):,}",
+            "surge_45d": f"₹{int(f45):,}",
+            "surge_1d_raw": int(f1),
+            "standard_7d_raw": int(f7),
+            "surge_15d_raw": int(f15),
+            "surge_30d_raw": int(f30),
+            "surge_45d_raw": int(f45),
+            "base_fare": int(base_fare)
         })
-        
+
+    heatmap_list.sort(key=lambda x: x["weight"], reverse=True)
     return heatmap_list
 
 @app.get("/api/index")
 def get_index_metrics():
     data = load_json_data()
-    routes = data.get("routes", [])
-    raw_flights = data.get("raw_flights", [])
-    
-    corridors_dict = {}
-    selected_routes = [r for r in routes if r.get("route") in CORE_8_CORRIDORS]
-    if not selected_routes:
-        selected_routes = routes[:8]
-    
-    for r in selected_routes:
-        route_str = r.get("route", "")
-        origin, dest = route_str.split("-") if "-" in route_str else ("DEL", "BOM")
-        base_tariff = float(r.get("base_price", 4000.0))
-        route_flights = [f for f in raw_flights if f.get("route") == route_str or (f.get("origin") == origin and f.get("destination") == dest)]
-        
-        horizons_data = {}
-        for h in [1, 7, 15, 30, 45]:
-            f_h = [f.get("fare_inr", 0) for f in route_flights if f.get("advance_days") == h]
-            if f_h:
-                median_price = int(sum(f_h) / len(f_h))
-            else:
-                multipliers = {1: 1.45, 7: 1.10, 15: 0.95, 30: 0.88, 45: 0.82}
-                median_price = int(base_tariff * multipliers.get(h, 1.0))
-            
-            horizons_data[h] = {"median_fare": median_price}
-        
-        corridors_dict[route_str] = {
-            "base_tariff": base_tariff,
-            "current_index": r.get("route_index", 112.5),
-            "horizons": horizons_data
-        }
-        
     return {
-        "composite_index": data.get("current_index", 127.74),
-        "monthly_change": data.get("monthly_change", 27.74),
-        "yearly_change": data.get("yearly_change", 18.0),
-        "corridors": corridors_dict
+        "composite_index": data.get("national_composite_index", 108.4),
+        "monthly_change": data.get("monthly_change", 8.4),
+        "yearly_change": data.get("yearly_change", 5.5),
+        "macro_validation_score": data.get("macro_validation_score", 0.94)
     }
 
 @app.get("/api/flights")
 def get_flight_quotes(
     origin: Optional[str] = Query(None),
     destination: Optional[str] = Query(None),
-    advance_days: Optional[int] = Query(None),
-    days_ahead: Optional[int] = Query(None)
+    advance_days: Optional[int] = Query(7),
+    cabin_class: Optional[str] = Query("Economy")
 ):
-    target_days = advance_days if advance_days is not None else days_ahead
-    data = load_json_data()
-    raw_flights = data.get("raw_flights", [])
-    
-    filtered = []
-    for f in raw_flights:
-        if origin and f.get("origin", "").upper() != origin.upper():
-            continue
-        if destination and f.get("destination", "").upper() != destination.upper():
-            continue
-        if target_days is not None and f.get("advance_days") != target_days:
-            continue
-            
-        flight_copy = dict(f)
-        flight_copy["total_fare"] = flight_copy.get("fare_inr", flight_copy.get("total_fare", 4500))
-        filtered.append(flight_copy)
-            
-    return filtered
+    clean_orig = origin.split()[0].strip().upper() if origin else "DEL"
+    clean_dest = destination.split()[0].strip().upper() if destination else "BOM"
+    raw_cabin = (cabin_class or "Economy").strip()
+
+    if "business" in raw_cabin.lower():
+        target_cabin = "Business"
+    elif "premium" in raw_cabin.lower():
+        target_cabin = "Premium Economy"
+    elif "first" in raw_cabin.lower():
+        target_cabin = "First Class"
+    else:
+        target_cabin = "Economy"
+
+    conn = get_db()
+    rows = conn.execute("""
+        SELECT origin, destination, departure_date, departure_time, arrival_time, duration, advance_days, 
+               airline, flight_number, cabin_class, stops, emissions, flight_category,
+               CAST(base_fare AS REAL) as base_fare, 
+               CAST(taxes_fees AS REAL) as taxes_fees, 
+               CAST(total_fare AS REAL) as total_fare
+        FROM cleaned_fare_quotes
+        WHERE origin = ? AND destination = ? AND CAST(advance_days AS INTEGER) = ? AND cabin_class = ?
+        ORDER BY CASE WHEN flight_category = 'Best Flights' THEN 0 ELSE 1 END, total_fare ASC
+    """, (clean_orig, clean_dest, advance_days, target_cabin)).fetchall()
+
+    if not rows:
+        rows = conn.execute("""
+            SELECT origin, destination, departure_date, departure_time, arrival_time, duration, advance_days, 
+                   airline, flight_number, cabin_class, stops, emissions, flight_category,
+                   CAST(base_fare AS REAL) as base_fare, 
+                   CAST(taxes_fees AS REAL) as taxes_fees, 
+                   CAST(total_fare AS REAL) as total_fare
+            FROM cleaned_fare_quotes
+            WHERE origin = ? AND destination = ? AND cabin_class = ?
+            ORDER BY CASE WHEN flight_category = 'Best Flights' THEN 0 ELSE 1 END, total_fare ASC
+        """, (clean_orig, clean_dest, target_cabin)).fetchall()
+
+    conn.close()
+    return [dict(r) for r in rows]
 
 @app.get("/api/export-mospi-csv")
 def export_mospi_csv(
@@ -172,119 +189,43 @@ def export_mospi_csv(
     destination: Optional[str] = Query(None),
     advance_days: Optional[int] = Query(None)
 ):
-    data = load_json_data()
+    clean_orig = origin.split()[0].strip().upper() if origin else None
+    clean_dest = destination.split()[0].strip().upper() if destination else None
+
+    conn = get_db()
+    if clean_orig and clean_dest:
+        rows = conn.execute("""
+            SELECT origin, destination, departure_date, departure_time, arrival_time, duration, advance_days, airline, flight_number, cabin_class, stops, base_fare, taxes_fees, total_fare
+            FROM cleaned_fare_quotes
+            WHERE origin = ? AND destination = ? AND (? IS NULL OR CAST(advance_days AS INTEGER) = ?)
+            ORDER BY total_fare ASC
+        """, (clean_orig, clean_dest, advance_days, advance_days)).fetchall()
+        filename = f"Flight_Quotes_{clean_orig}_{clean_dest}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"
+    else:
+        rows = conn.execute("""
+            SELECT origin, destination, departure_date, departure_time, arrival_time, duration, advance_days, airline, flight_number, cabin_class, stops, base_fare, taxes_fees, total_fare
+            FROM cleaned_fare_quotes
+            ORDER BY origin, destination, advance_days
+        """).fetchall()
+        filename = f"MoSPI_AFI_Report_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"
+    conn.close()
+
     output = io.StringIO()
     writer = csv.writer(output)
-    
-    # Specific Route Quote Export
-    if origin and destination and origin.lower() != "null" and destination.lower() != "null":
-        raw_flights = data.get("raw_flights", [])
-        filtered_quotes = [
-            f for f in raw_flights 
-            if f.get("origin", "").upper() == origin.upper() 
-            and f.get("destination", "").upper() == destination.upper()
-            and (advance_days is None or f.get("advance_days") == advance_days)
-        ]
-        
-        if not filtered_quotes:
-            filtered_quotes = [
-                f for f in raw_flights 
-                if f.get("origin", "").upper() == origin.upper() 
-                and f.get("destination", "").upper() == destination.upper()
-            ]
+    writer.writerow([
+        "Airline", "Flight_Number", "Origin", "Destination", "Corridor",
+        "Departure_Date", "Departure_Time", "Arrival_Time", "Duration", "Cabin_Class",
+        "Stops", "Base_Fare_INR", "Taxes_Fees_INR", "Total_Fare_INR", "Advance_Days_Horizon", "DGCA_Weight"
+    ])
 
-        # Robust Corridor Fallback if querying a non-core scraped city pair
-        if not filtered_quotes:
-            base_tariffs = {"DEL-BOM": 4200, "BOM-DEL": 4200, "DEL-BLR": 4800, "BLR-DEL": 4800, 
-                             "BOM-BLR": 3600, "BLR-BOM": 3600, "DEL-CCU": 4400, "CCU-DEL": 4400,
-                             "DEL-MAA": 4600, "MAA-DEL": 4600, "BLR-PAT": 5200, "PAT-BLR": 5200}
-            base = base_tariffs.get(f"{origin.upper()}-{destination.upper()}", 4500)
-            
-            carriers = [
-                ("IndiGo", "08:45", "11:00", 0.98),
-                ("Air India", "09:00", "11:15", 1.05),
-                ("Akasa Air", "09:20", "11:40", 0.94),
-                ("SpiceJet", "18:30", "20:50", 1.02),
-                ("Air India Express", "16:15", "18:35", 0.93)
-            ]
-            
-            adv_list = [advance_days] if advance_days else [1, 7, 15, 30, 45]
-            mult_map = {1: 1.45, 7: 1.10, 15: 0.95, 30: 0.88, 45: 0.82}
-            
-            for d in adv_list:
-                t_date = (datetime.now() + timedelta(days=d)).strftime("%Y-%m-%d")
-                for c_name, dep, arr, factor in carriers:
-                    fare = int(base * mult_map.get(d, 1.0) * factor)
-                    filtered_quotes.append({
-                        "airline": c_name,
-                        "origin": origin.upper(),
-                        "destination": destination.upper(),
-                        "route": f"{origin.upper()}-{destination.upper()}",
-                        "travel_date": t_date,
-                        "departure_time": dep,
-                        "arrival_time": arr,
-                        "number_of_stops": 0,
-                        "cabin_class": "Economy",
-                        "total_fare": fare,
-                        "fare_inr": fare,
-                        "advance_days": d,
-                        "source": "DGCA_Verified_Schedule"
-                    })
-
+    for r in rows:
+        corridor = f"{r['origin']}-{r['destination']}"
+        weight = CORRIDORS_8.get(corridor, 0.10)
         writer.writerow([
-            "Airline", "Origin", "Destination", "Corridor", "Departure_Date",
-            "Departure_Time", "Arrival_Time", "Stops", "Cabin_Class",
-            "Base_Fare_INR", "Taxes_Fees_INR", "Total_Fare_INR", "Advance_Days_Horizon", "Ingestion_Source"
+            r["airline"], r["flight_number"], r["origin"], r["destination"], corridor,
+            r["departure_date"], r["departure_time"], r["arrival_time"], r["duration"], r["cabin_class"],
+            r["stops"], r["base_fare"], r["taxes_fees"], r["total_fare"], r["advance_days"], weight
         ])
-        
-        for q in filtered_quotes:
-            total = q.get("fare_inr", q.get("total_fare", 4200))
-            taxes = int(total * 0.12)
-            base = total - taxes
-            writer.writerow([
-                q.get("airline", "IndiGo"),
-                q.get("origin", origin).upper(),
-                q.get("destination", destination).upper(),
-                f"{origin.upper()}-{destination.upper()}",
-                q.get("travel_date", ""),
-                q.get("departure_time", "08:00"),
-                q.get("arrival_time", "10:15"),
-                "Nonstop" if q.get("number_of_stops", 0) == 0 else "1 Stop",
-                q.get("cabin_class", "Economy"),
-                base,
-                taxes,
-                total,
-                q.get("advance_days", 7),
-                q.get("source", "Google_Flights_Aggregator")
-            ])
-            
-        filename = f"Flight_Quotes_{origin.upper()}_{destination.upper()}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"
-
-    # Macro 8-Corridor Statutory Audit Report
-    else:
-        routes = data.get("routes", [])
-        selected_routes = [r for r in routes if r.get("route") in CORE_8_CORRIDORS] or routes
-        
-        writer.writerow([
-            "Corridor", "Base_Reference_Price", "Current_Observed_Fare",
-            "Laspeyres_Price_Relative", "Surge_Percentage", "DGCA_Weight",
-            "Surge_Indicator", "DGCA_Statutory_Source", "Report_Timestamp"
-        ])
-        
-        for r in selected_routes:
-            writer.writerow([
-                r.get("route", ""),
-                r.get("base_price", 4000),
-                round(r.get("current_mean_price", 4200), 2),
-                round(r.get("route_index", 100), 2),
-                round(r.get("surge_pct", 0), 2),
-                r.get("weight", 0.05),
-                r.get("indicator", "green"),
-                "DGCA Table 1.01 City-Pair Statistics FY 2023-24",
-                datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-            ])
-            
-        filename = f"MoSPI_AFI_Report_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"
 
     output.seek(0)
     return StreamingResponse(
@@ -293,6 +234,8 @@ def export_mospi_csv(
         headers={"Content-Disposition": f"attachment; filename={filename}"}
     )
 
+app.mount("/", StaticFiles(directory=".", html=True), name="static")
+
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run("server:app", host="127.0.0.1", port=8000, reload=True)
+    uvicorn.run(app, host="127.0.0.1", port=8000)
