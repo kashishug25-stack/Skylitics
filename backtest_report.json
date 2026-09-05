@@ -1,0 +1,23 @@
+{
+  "generated_at": "2026-09-05T01:23:34.168884",
+  "method": "Injected synthetic fares with known ground-truth labels into real seeded data, ran the identical train_ml_engine.py pipeline, and measured whether injected cases were caught.",
+  "gouging_cases": {
+    "injected": 25,
+    "caught_as_anomaly": 25,
+    "correctly_labeled_gouging": 21,
+    "recall_as_anomaly": 1.0,
+    "recall_exact_label": 0.84
+  },
+  "surge_cases": {
+    "injected": 25,
+    "caught_as_anomaly": 25,
+    "correctly_labeled_surge": 25,
+    "recall_as_anomaly": 1.0,
+    "recall_exact_label": 1.0
+  },
+  "normal_control": {
+    "sampled": 2116,
+    "false_positives": 182,
+    "false_positive_rate": 0.086
+  }
+}

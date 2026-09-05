@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SKYLITICS — National Airfare Price Index</title>
+  <link rel="stylesheet" href="style.css?v=2" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%237dd3fc'><path d='M21 16v-2l-8-5V3.5c0-.83-.67-1.5-1.5-1.5S10 2.67 10 3.5V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z'/></svg>" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&family=Space+Grotesk:wght@500;600;700;800&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+  <div class="sky-backdrop"></div>
+
+  <div class="app-layout">
+    <div class="browser-pill-bar">
+      <span class="dot-red"></span>
+      <span class="dot-yellow"></span>
+      <span class="dot-green"></span>
+      <span class="bar-url" id="barUrl">skylitics.gov.in/airfare-intelligence</span>
+    </div>
+
+    <header class="hero-brand">
+      <div class="brand-crest-row">
+        <div class="crest-line"></div>
+        <div class="crest-plane-icon">
+          <svg viewBox="0 0 24 24" fill="#7dd3fc" stroke="#38bdf8" stroke-width="1.2">
+            <path d="M12 2L15 8L22 9L17 14L18 21L12 17L6 21L7 14L2 9L9 8L12 2Z"/>
+          </svg>
+        </div>
+        <div class="crest-line"></div>
+      </div>
+
+      <h1 class="brand-wordmark">SKY<span class="brand-separator">·</span>LITICS</h1>
+      <p class="brand-tagline">NATIONAL AIRFARE PRICE INDEX & DYNAMIC SURGE ENGINE</p>
+
+      <div class="hero-pill-row">
+        <span class="editorial-pill">MoSPI CPI Framework</span>
+        <span class="editorial-pill">Laspeyres Formula</span>
+        <span class="editorial-pill">DGCA Traffic Weighted</span>
+
+        <!-- Live Sync Trigger & Real-time Timestamp Badge -->
+        <button id="sync-data-btn" class="btn btn-outline-sm" onclick="triggerLiveSync()" style="margin-left: 8px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px;">
+          <span id="sync-spinner" style="display: none;">⏳</span>
+          <span id="sync-text">🔄 Sync Fresh Data</span>
+        </button>
+        <span id="last-sync-pill" class="editorial-pill" style="font-size: 11px; opacity: 0.9; border-color: #38bdf8;">
+          Last Ingestion: <strong id="lastSyncTime">Checking...</strong>
+        </span>
+      </div>
+    </header>
+
+    <!-- VIEW 1: SEARCH & NATIONAL HEATMAP VIEW -->
+    <div id="searchViewSection" class="view-transition">
+      <div class="top-row-grid">
+        <section class="frosted-card query-card">
+          <div class="card-title-row">
+            <div>
+              <h3>Corridor Intelligence Query</h3>
+              <span class="caption-text">Evaluate real-time sector indices, decay curves & carrier splits</span>
+            </div>
+          </div>
+
+          <form id="searchForm" class="query-form" onsubmit="event.preventDefault(); handleSearch(); return false;">
+            <div class="form-duo">
+              <div class="input-group">
+                <label for="origin">Departure Origin</label>
+                <select id="origin" required>
+                  <option value="" disabled selected>Select Origin Airport</option>
+                  <option value="DEL">DEL — New Delhi (IGI)</option>
+                  <option value="BOM">BOM — Mumbai (CSMI)</option>
+                  <option value="BLR">BLR — Bengaluru (KIA)</option>
+                  <option value="HYD">HYD — Hyderabad (RGIA)</option>
+                  <option value="CCU">CCU — Kolkata (NSCBI)</option>
+                  <option value="MAA">MAA — Chennai (MAA)</option>
+                  <option value="GOI">GOI — Goa (Dabolim)</option>
+                  <option value="PAT">PAT — Patna (JPNI)</option>
+                </select>
+              </div>
+
+              <div class="input-group">
+                <label for="destination">Arrival Destination</label>
+                <select id="destination" required>
+                  <option value="" disabled selected>Select Destination Airport</option>
+                  <option value="BOM">BOM — Mumbai (CSMI)</option>
+                  <option value="DEL">DEL — New Delhi (IGI)</option>
+                  <option value="BLR">BLR — Bengaluru (KIA)</option>
+                  <option value="HYD">HYD — Hyderabad (RGIA)</option>
+                  <option value="CCU">CCU — Kolkata (NSCBI)</option>
+                  <option value="MAA">MAA — Chennai (MAA)</option>
+                  <option value="GOI">GOI — Goa (Dabolim)</option>
+                  <option value="PAT">PAT — Patna (JPNI)</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="form-duo">
+              <div class="input-group">
+                <label for="cabinClass">Cabin Class</label>
+                <select id="cabinClass" required>
+                  <option value="Economy" selected>Economy Class</option>
+                  <option value="Premium Economy">Premium Economy</option>
+                  <option value="Business">Business Class</option>
+                  <option value="First Class">First Class</option>
+                </select>
+              </div>
+
+              <div class="input-group">
+                <label for="travelDate">Booking Horizon</label>
+                <select id="travelDate" required>
+                  <option value="1">1-Day Ahead (Immediate Surge)</option>
+                  <option value="7" selected>7-Days Ahead (Standard Window)</option>
+                  <option value="15">15-Days Ahead (Advance Window)</option>
+                  <option value="30">30-Days Ahead (Monthly Window)</option>
+                  <option value="45">45-Days Ahead (Long Horizon)</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="btn-group">
+              <button type="submit" class="btn btn-primary">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M22 2L11 13"/><path d="M22 2l-7 20-4-9-9-4 20-7z"/></svg>
+                Compute Sector Intelligence
+              </button>
+              <button type="button" class="btn btn-outline" onclick="exportMoSPIData()">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                1-Click MoSPI CSV
+              </button>
+            </div>
+          </form>
+        </section>
+
+        <!-- Market Matrix -->
+        <section class="frosted-card snapshot-card">
+          <div class="card-title-row">
+            <div>
+              <h3>Market Basket Matrix</h3>
+              <span class="caption-text">National ingestion status</span>
+            </div>
+            <span class="live-tag"><span class="pulse-circle"></span> Live Sync</span>
+          </div>
+
+          <div class="matrix-stack">
+            <div class="matrix-cell">
+              <span class="m-label">Composite Index (T+7)</span>
+              <span class="m-val highlight-blue" id="nationalCompositeVal">118.40</span>
+            </div>
+            <div class="matrix-cell">
+              <span class="m-label">Laspeyres Benchmark Base</span>
+              <span class="m-val">100.00 (MoSPI Base)</span>
+            </div>
+            <div class="matrix-cell">
+              <span class="m-label">MoSPI Transport CPI (Base 2024=100)</span>
+              <span class="m-val highlight-blue">105.63</span>
+            </div>
+            <div class="matrix-cell">
+              <span class="m-label">Macro Validation</span>
+              <span class="m-val" id="macroValidationVal" style="color: #059669;">+0.94 Correlation</span>
+            </div>
+          </div>
+        </section>
+      </div>
+
+      <!-- National Sector Surge Heatmap Grid -->
+      <section class="frosted-card" style="margin-bottom: 24px;">
+        <div class="card-title-row">
+          <div>
+            <h3>National Sector Surge Heatmap</h3>
+            <span class="caption-text">Continuous DGCA-weighted corridor monitoring across India</span>
+          </div>
+          <span class="pill-outline">8 Corridors</span>
+        </div>
+        <div class="stat-quad-grid" id="heatmapContainer" style="margin-bottom: 0;"></div>
+      </section>
+    </div>
+
+    <!-- VIEW 2: FULL RESULTS DASHBOARD -->
+    <div id="resultsViewSection" class="view-transition" style="display: none;">
+      <div class="results-top-nav">
+        <button type="button" class="btn btn-back" onclick="returnToSearch()">
+          ← Modify Corridor Query
+        </button>
+        <div class="corridor-active-pill">
+          <span id="activeCorridorText">DEL ➔ BOM (Economy · 7d Horizon)</span>
+        </div>
+        <button type="button" class="btn btn-outline-sm" onclick="exportMoSPIData()">
+          📥 Export MoSPI CSV
+        </button>
+      </div>
+
+      <!-- Horizon Cards -->
+      <section class="horizon-cards-grid">
+        <div class="route-snapshot-card">
+          <div class="rc-top">
+            <span class="carrier-badge carrier-indigo">Immediate Surge</span>
+            <span class="advance-pill">1d Advance</span>
+          </div>
+          <div class="rc-airports">
+            <h3 id="rcOrigin1">DEL</h3>
+            <span class="plane-connector">✈</span>
+            <h3 id="rcDest1">BOM</h3>
+          </div>
+          <span class="rc-date" id="rcDate1">Travel Date: --</span>
+          <div class="rc-fare-row">
+            <div>
+              <span class="rc-fare-label">SURGE TARIFF</span>
+              <h2 class="rc-fare-val" id="rcFare1">₹ --</h2>
+            </div>
+            <span class="delta-pill delta-surge" id="rcSurge1">-- %</span>
+          </div>
+        </div>
+
+        <div class="route-snapshot-card highlight-card">
+          <div class="rc-top">
+            <span class="carrier-badge carrier-akasa">Standard Booking</span>
+            <span class="advance-pill">7d Advance</span>
+          </div>
+          <div class="rc-airports">
+            <h3 id="rcOrigin7">DEL</h3>
+            <span class="plane-connector">✈</span>
+            <h3 id="rcDest7">BOM</h3>
+          </div>
+          <span class="rc-date" id="rcDate7">Travel Date: --</span>
+          <div class="rc-fare-row">
+            <div>
+              <span class="rc-fare-label">STANDARD TARIFF</span>
+              <h2 class="rc-fare-val" id="rcFare7">₹ --</h2>
+            </div>
+            <span class="delta-pill delta-moderate" id="rcSurge7">-- %</span>
+          </div>
+        </div>
+
+        <div class="route-snapshot-card">
+          <div class="rc-top">
+            <span class="carrier-badge carrier-airindia">Advance Horizon</span>
+            <span class="advance-pill">15d Advance</span>
+          </div>
+          <div class="rc-airports">
+            <h3 id="rcOrigin15">DEL</h3>
+            <span class="plane-connector">✈</span>
+            <h3 id="rcDest15">BOM</h3>
+          </div>
+          <span class="rc-date" id="rcDate15">Travel Date: --</span>
+          <div class="rc-fare-row">
+            <div>
+              <span class="rc-fare-label">ADVANCE TARIFF</span>
+              <h2 class="rc-fare-val" id="rcFare15">₹ --</h2>
+            </div>
+            <span class="delta-pill delta-discount" id="rcSurge15">-- %</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- Stat Quad -->
+      <section class="stat-quad-grid">
+        <div class="frosted-card stat-card">
+          <div class="sc-top">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#0284c7" stroke-width="2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+            <span class="delta-pill" id="fareDeltaPill">-- %</span>
+          </div>
+          <span class="sc-label">Average Sector Tariff</span>
+          <h2 class="sc-val" id="displayFare">₹ --</h2>
+          <span class="sc-sub" id="displayCabin">Economy</span>
+        </div>
+
+        <div class="frosted-card stat-card">
+          <div class="sc-top">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#0284c7" stroke-width="2"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>
+            <span class="delta-pill delta-surge" id="indexDeltaPill">+0.0% ▲</span>
+          </div>
+          <span class="sc-label">Laspeyres Price Relative</span>
+          <h2 class="sc-val" id="displayRelative">--</h2>
+          <span class="sc-sub">Base Relative = 100.00</span>
+        </div>
+
+        <div class="frosted-card stat-card">
+          <div class="sc-top">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#0284c7" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            <span class="status-dot" id="statusDot"></span>
+          </div>
+          <span class="sc-label">Surge Assessment</span>
+          <h2 class="sc-val" id="displayStatus">Standby</h2>
+          <span class="sc-sub" id="displaySubtext">Live DGCA evaluation</span>
+        </div>
+
+        <div class="frosted-card stat-card">
+          <div class="sc-top">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#0284c7" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
+            <span class="delta-pill delta-discount" id="decayDeltaPill">-14.5% ▼</span>
+          </div>
+          <span class="sc-label">Advance Booking Gain</span>
+          <h2 class="sc-val" id="displayDecay">₹ --</h2>
+          <span class="sc-sub">15-Day vs 1-Day Horizon</span>
+        </div>
+      </section>
+
+      <!-- Chart -->
+      <section class="frosted-card full-width-chart-card">
+        <div class="card-title-row">
+          <div>
+            <h3>Temporal Price Decay Curve (1d ➔ 45d Horizons)</h3>
+            <span class="caption-text">Actual Laspeyres database observations across advance booking horizons</span>
+          </div>
+          <span class="pill-outline">Laspeyres Curve</span>
+        </div>
+        <div class="canvas-holder">
+          <canvas id="decayChart"></canvas>
+        </div>
+      </section>
+
+      <!-- Flight Timetable with Category Filter -->
+      <section class="frosted-card full-width-flights-section">
+        <div class="card-title-row" style="display: flex; justify-content: space-between; align-items: center;">
+          <div>
+            <h3 id="scheduleTitle">Verified Scheduled Flight Quotes</h3>
+            <span class="caption-text" id="scheduleSub">Displaying authentic observations</span>
+          </div>
+          <div style="display: flex; gap: 8px;">
+            <button class="btn btn-outline-sm" id="btnFilterBest" onclick="filterFlightView('best')" style="padding: 5px 12px; font-size: 12px; font-weight: 700; background: #0284c7; color: white;">Best & Other Flights</button>
+            <button class="btn btn-outline-sm" id="btnFilterNonstop" onclick="filterFlightView('nonstop')" style="padding: 5px 12px; font-size: 12px; font-weight: 600;">Direct Nonstop</button>
+            <button class="btn btn-outline-sm" id="btnFilterAll" onclick="filterFlightView('all')" style="padding: 5px 12px; font-size: 12px; font-weight: 600;">All Flights</button>
+          </div>
+        </div>
+        <div class="flight-strips-full-list" id="flightListContainer"></div>
+      </section>
+    </div>
+  </div>
+
+  <!-- Modal -->
+  <div id="flightModal" class="modal-overlay" onclick="closeModal(event)">
+    <div class="modal-card" onclick="event.stopPropagation()">
+      <div class="modal-header">
+        <div class="modal-carrier-info">
+          <div id="modalLogoAvatar" class="carrier-avatar" style="width: 40px; height: 40px; font-size: 1.1rem; display: flex; align-items: center; justify-content: center; border-radius: 8px; color: white;">✈</div>
+          <div>
+            <h3 id="modalCarrierName">Carrier Intelligence</h3>
+            <span id="modalFlightNumber" class="modal-flight-code">Database Verified</span>
+          </div>
+        </div>
+        <button class="modal-close-btn" onclick="closeModalDirect()">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="modal-fare-breakdown">
+          <div class="modal-row">
+            <span>Base Airline Fare:</span>
+            <strong id="modalBaseFare">₹0</strong>
+          </div>
+          <div class="modal-row">
+            <span>Taxes, Fuel Surcharge & Fees:</span>
+            <strong id="modalTaxesFees">₹0</strong>
+          </div>
+          <div class="modal-row modal-total-row">
+            <span>Total Published Tariff:</span>
+            <strong id="modalTotalFare" class="modal-highlight-fare">₹0</strong>
+          </div>
+        </div>
+        <div class="modal-surge-alert-box" id="modalSurgeBox">
+          <span id="modalSurgeNotice">Surge Alert: Tariff reflects actual collected fare observations from SQLite.</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- External Script -->
+  <script src="app.js?v=4"></script>
+</body>
+</html>

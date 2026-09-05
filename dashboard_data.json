@@ -1,0 +1,89 @@
+{
+  "national_composite_index": 124.66,
+  "monthly_change": 24.66,
+  "yearly_change": 16.03,
+  "benchmark_base": 100.0,
+  "macro_validation_score": 0.623,
+  "routes": [
+    {
+      "route": "DEL-BOM",
+      "origin": "DEL",
+      "destination": "BOM",
+      "weight": 0.2299,
+      "base_mean_price": 6950.41,
+      "current_mean_price": 7388.3,
+      "route_index": 106.3,
+      "surge_pct": -3.1
+    },
+    {
+      "route": "DEL-BLR",
+      "origin": "DEL",
+      "destination": "BLR",
+      "weight": 0.1651,
+      "base_mean_price": 9937.18,
+      "current_mean_price": 9600.95,
+      "route_index": 96.62,
+      "surge_pct": -2.28
+    },
+    {
+      "route": "BOM-BLR",
+      "origin": "BOM",
+      "destination": "BLR",
+      "weight": 0.1305,
+      "base_mean_price": 7055.15,
+      "current_mean_price": 11021.69,
+      "route_index": 156.22,
+      "surge_pct": 1.0
+    },
+    {
+      "route": "DEL-CCU",
+      "origin": "DEL",
+      "destination": "CCU",
+      "weight": 0.1158,
+      "base_mean_price": 9230.92,
+      "current_mean_price": 8631.67,
+      "route_index": 93.51,
+      "surge_pct": -5.78
+    },
+    {
+      "route": "BLR-HYD",
+      "origin": "BLR",
+      "destination": "HYD",
+      "weight": 0.1,
+      "base_mean_price": 4678.56,
+      "current_mean_price": 9341.44,
+      "route_index": 199.66,
+      "surge_pct": 108.03
+    },
+    {
+      "route": "MAA-DEL",
+      "origin": "MAA",
+      "destination": "DEL",
+      "weight": 0.0953,
+      "base_mean_price": 10138.4,
+      "current_mean_price": 12194.71,
+      "route_index": 120.28,
+      "surge_pct": 24.42
+    },
+    {
+      "route": "DEL-GOI",
+      "origin": "DEL",
+      "destination": "GOI",
+      "weight": 0.0889,
+      "base_mean_price": 9211.42,
+      "current_mean_price": 14793.95,
+      "route_index": 160.6,
+      "surge_pct": 34.44
+    },
+    {
+      "route": "DEL-PAT",
+      "origin": "DEL",
+      "destination": "PAT",
+      "weight": 0.0745,
+      "base_mean_price": 6787.71,
+      "current_mean_price": 6697.72,
+      "route_index": 98.67,
+      "surge_pct": -0.24
+    }
+  ]
+}
