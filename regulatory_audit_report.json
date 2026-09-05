@@ -1,0 +1,308 @@
+{
+  "generated_at": "2026-09-05T18:01:30.373278",
+  "total_economy_quotes_analyzed": 2116,
+  "dgca_weight_sum_check": 1.0,
+  "tariff_cap_scenarios": [
+    {
+      "cap_inr": 7500,
+      "corridors_included": [
+        "DEL-BOM",
+        "DEL-BLR",
+        "BOM-BLR",
+        "DEL-CCU",
+        "BLR-HYD",
+        "MAA-DEL",
+        "DEL-GOI",
+        "DEL-PAT"
+      ],
+      "corridors_missing_data": [],
+      "national_index_before_cap": 100.0,
+      "national_index_after_cap": 82.59,
+      "inflation_reduction_bps": 1741.1,
+      "corridor_detail": {
+        "DEL-BOM": {
+          "original_avg_fare": 7062.71,
+          "capped_avg_fare": 6787.59,
+          "flights_affected": 69,
+          "total_flights": 500
+        },
+        "DEL-BLR": {
+          "original_avg_fare": 9941.47,
+          "capped_avg_fare": 7500.0,
+          "flights_affected": 408,
+          "total_flights": 408
+        },
+        "BOM-BLR": {
+          "original_avg_fare": 8108.35,
+          "capped_avg_fare": 6997.85,
+          "flights_affected": 126,
+          "total_flights": 293
+        },
+        "DEL-CCU": {
+          "original_avg_fare": 9454.51,
+          "capped_avg_fare": 7490.7,
+          "flights_affected": 257,
+          "total_flights": 280
+        },
+        "BLR-HYD": {
+          "original_avg_fare": 7221.31,
+          "capped_avg_fare": 5996.61,
+          "flights_affected": 54,
+          "total_flights": 177
+        },
+        "MAA-DEL": {
+          "original_avg_fare": 11075.4,
+          "capped_avg_fare": 7500.0,
+          "flights_affected": 204,
+          "total_flights": 204
+        },
+        "DEL-GOI": {
+          "original_avg_fare": 12077.56,
+          "capped_avg_fare": 7499.25,
+          "flights_affected": 101,
+          "total_flights": 102
+        },
+        "DEL-PAT": {
+          "original_avg_fare": 6691.69,
+          "capped_avg_fare": 6578.73,
+          "flights_affected": 10,
+          "total_flights": 152
+        }
+      }
+    },
+    {
+      "cap_inr": 9000,
+      "corridors_included": [
+        "DEL-BOM",
+        "DEL-BLR",
+        "BOM-BLR",
+        "DEL-CCU",
+        "BLR-HYD",
+        "MAA-DEL",
+        "DEL-GOI",
+        "DEL-PAT"
+      ],
+      "corridors_missing_data": [],
+      "national_index_before_cap": 100.0,
+      "national_index_after_cap": 90.25,
+      "inflation_reduction_bps": 974.8,
+      "corridor_detail": {
+        "DEL-BOM": {
+          "original_avg_fare": 7062.71,
+          "capped_avg_fare": 6896.69,
+          "flights_affected": 23,
+          "total_flights": 500
+        },
+        "DEL-BLR": {
+          "original_avg_fare": 9941.47,
+          "capped_avg_fare": 8946.74,
+          "flights_affected": 322,
+          "total_flights": 408
+        },
+        "BOM-BLR": {
+          "original_avg_fare": 8108.35,
+          "capped_avg_fare": 7343.16,
+          "flights_affected": 38,
+          "total_flights": 293
+        },
+        "DEL-CCU": {
+          "original_avg_fare": 9454.51,
+          "capped_avg_fare": 8620.43,
+          "flights_affected": 88,
+          "total_flights": 280
+        },
+        "BLR-HYD": {
+          "original_avg_fare": 7221.31,
+          "capped_avg_fare": 6417.63,
+          "flights_affected": 43,
+          "total_flights": 177
+        },
+        "MAA-DEL": {
+          "original_avg_fare": 11075.4,
+          "capped_avg_fare": 8997.56,
+          "flights_affected": 201,
+          "total_flights": 204
+        },
+        "DEL-GOI": {
+          "original_avg_fare": 12077.56,
+          "capped_avg_fare": 8888.08,
+          "flights_affected": 81,
+          "total_flights": 102
+        },
+        "DEL-PAT": {
+          "original_avg_fare": 6691.69,
+          "capped_avg_fare": 6642.8,
+          "flights_affected": 1,
+          "total_flights": 152
+        }
+      }
+    },
+    {
+      "cap_inr": 10500,
+      "corridors_included": [
+        "DEL-BOM",
+        "DEL-BLR",
+        "BOM-BLR",
+        "DEL-CCU",
+        "BLR-HYD",
+        "MAA-DEL",
+        "DEL-GOI",
+        "DEL-PAT"
+      ],
+      "corridors_missing_data": [],
+      "national_index_before_cap": 100.0,
+      "national_index_after_cap": 94.59,
+      "inflation_reduction_bps": 541.0,
+      "corridor_detail": {
+        "DEL-BOM": {
+          "original_avg_fare": 7062.71,
+          "capped_avg_fare": 6948.49,
+          "flights_affected": 12,
+          "total_flights": 500
+        },
+        "DEL-BLR": {
+          "original_avg_fare": 9941.47,
+          "capped_avg_fare": 9702.54,
+          "flights_affected": 99,
+          "total_flights": 408
+        },
+        "BOM-BLR": {
+          "original_avg_fare": 8108.35,
+          "capped_avg_fare": 7508.08,
+          "flights_affected": 28,
+          "total_flights": 293
+        },
+        "DEL-CCU": {
+          "original_avg_fare": 9454.51,
+          "capped_avg_fare": 8964.86,
+          "flights_affected": 47,
+          "total_flights": 280
+        },
+        "BLR-HYD": {
+          "original_avg_fare": 7221.31,
+          "capped_avg_fare": 6727.7,
+          "flights_affected": 28,
+          "total_flights": 177
+        },
+        "MAA-DEL": {
+          "original_avg_fare": 11075.4,
+          "capped_avg_fare": 10194.65,
+          "flights_affected": 86,
+          "total_flights": 204
+        },
+        "DEL-GOI": {
+          "original_avg_fare": 12077.56,
+          "capped_avg_fare": 9916.63,
+          "flights_affected": 58,
+          "total_flights": 102
+        },
+        "DEL-PAT": {
+          "original_avg_fare": 6691.69,
+          "capped_avg_fare": 6652.66,
+          "flights_affected": 1,
+          "total_flights": 152
+        }
+      }
+    },
+    {
+      "cap_inr": 12000,
+      "corridors_included": [
+        "DEL-BOM",
+        "DEL-BLR",
+        "BOM-BLR",
+        "DEL-CCU",
+        "BLR-HYD",
+        "MAA-DEL",
+        "DEL-GOI",
+        "DEL-PAT"
+      ],
+      "corridors_missing_data": [],
+      "national_index_before_cap": 100.0,
+      "national_index_after_cap": 96.6,
+      "inflation_reduction_bps": 340.0,
+      "corridor_detail": {
+        "DEL-BOM": {
+          "original_avg_fare": 7062.71,
+          "capped_avg_fare": 6979.18,
+          "flights_affected": 9,
+          "total_flights": 500
+        },
+        "DEL-BLR": {
+          "original_avg_fare": 9941.47,
+          "capped_avg_fare": 9882.96,
+          "flights_affected": 22,
+          "total_flights": 408
+        },
+        "BOM-BLR": {
+          "original_avg_fare": 8108.35,
+          "capped_avg_fare": 7634.97,
+          "flights_affected": 22,
+          "total_flights": 293
+        },
+        "DEL-CCU": {
+          "original_avg_fare": 9454.51,
+          "capped_avg_fare": 9180.35,
+          "flights_affected": 32,
+          "total_flights": 280
+        },
+        "BLR-HYD": {
+          "original_avg_fare": 7221.31,
+          "capped_avg_fare": 6929.38,
+          "flights_affected": 21,
+          "total_flights": 177
+        },
+        "MAA-DEL": {
+          "original_avg_fare": 11075.4,
+          "capped_avg_fare": 10551.5,
+          "flights_affected": 35,
+          "total_flights": 204
+        },
+        "DEL-GOI": {
+          "original_avg_fare": 12077.56,
+          "capped_avg_fare": 10656.53,
+          "flights_affected": 42,
+          "total_flights": 102
+        },
+        "DEL-PAT": {
+          "original_avg_fare": 6691.69,
+          "capped_avg_fare": 6662.53,
+          "flights_affected": 1,
+          "total_flights": 152
+        }
+      }
+    }
+  ],
+  "airline_compliance_scorecard": {
+    "IndiGo": {
+      "total_quotes": 1128,
+      "violations": 20,
+      "compliance_percentage": 98.23,
+      "total_excess_tariff_margin_inr": 197758.0
+    },
+    "Air India": {
+      "total_quotes": 614,
+      "violations": 19,
+      "compliance_percentage": 96.91,
+      "total_excess_tariff_margin_inr": 229652.0
+    },
+    "SpiceJet": {
+      "total_quotes": 47,
+      "violations": 1,
+      "compliance_percentage": 97.87,
+      "total_excess_tariff_margin_inr": 15808.5
+    },
+    "Akasa Air": {
+      "total_quotes": 180,
+      "violations": 4,
+      "compliance_percentage": 97.78,
+      "total_excess_tariff_margin_inr": 64338.0
+    },
+    "Other": {
+      "total_quotes": 147,
+      "violations": 5,
+      "compliance_percentage": 96.6,
+      "total_excess_tariff_margin_inr": 35186.0
+    }
+  },
+  "total_non_compliant_flights": 49
+}
