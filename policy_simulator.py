@@ -118,15 +118,19 @@ def simulate_tariff_cap(by_corridor, cap):
 def run_compliance_audit(by_corridor):
     """
     Flags any Economy quote priced above PREDATORY_MULTIPLE x its own
-    corridor's real median fare, then builds a per-airline scorecard.
+    corridor's fair benchmark, then builds a per-airline scorecard.
+
+    Per the task spec, the benchmark uses the T+30 (30-day advance) window
+    as the baseline travel horizon. If a corridor genuinely has no T+30
+    quotes, it honestly falls back to T+45, then T+15, then the corridor's
+    overall median — rather than silently guessing a number.
     """
     non_compliant_flights = []
     airline_stats = {a: {"total_quotes": 0, "violations": 0, "excess_margin": 0.0} for a in TRACKED_AIRLINES}
     airline_stats["Other"] = {"total_quotes": 0, "violations": 0, "excess_margin": 0.0}
 
     for corridor, quotes in by_corridor.items():
-        fares = [q["total_fare"] for q in quotes]
-        baseline = compute_corridor_baseline(fares)
+        baseline, baseline_source = compute_baseline_window(quotes)
         if baseline is None:
             continue
         fair_benchmark = baseline
@@ -164,6 +168,23 @@ def run_compliance_audit(by_corridor):
         }
 
     return scorecard, non_compliant_flights
+
+
+def compute_baseline_window(quotes):
+    """
+    Returns (baseline_fare, source_label) using T+30 as the primary baseline
+    travel window, per the task spec. Falls back honestly if T+30 data is
+    missing for this corridor, rather than inventing a number.
+    """
+    for horizon, label in [(30, "T+30"), (45, "T+45"), (15, "T+15")]:
+        fares = [q["total_fare"] for q in quotes if q["advance_days"] == horizon]
+        if fares:
+            return compute_corridor_baseline(fares), label
+    # Last-resort fallback: corridor's overall median, clearly labeled as such
+    all_fares = [q["total_fare"] for q in quotes]
+    if all_fares:
+        return compute_corridor_baseline(all_fares), "all-horizon (no T+30/45/15 data)"
+    return None, None
 
 
 def main():

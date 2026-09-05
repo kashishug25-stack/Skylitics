@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-09-05T18:01:30.373278",
+  "generated_at": "2026-09-05T18:14:21.857879",
   "total_economy_quotes_analyzed": 2116,
   "dgca_weight_sum_check": 1.0,
   "tariff_cap_scenarios": [
@@ -275,34 +275,34 @@
   "airline_compliance_scorecard": {
     "IndiGo": {
       "total_quotes": 1128,
-      "violations": 20,
-      "compliance_percentage": 98.23,
-      "total_excess_tariff_margin_inr": 197758.0
+      "violations": 40,
+      "compliance_percentage": 96.45,
+      "total_excess_tariff_margin_inr": 342007.0
     },
     "Air India": {
       "total_quotes": 614,
-      "violations": 19,
-      "compliance_percentage": 96.91,
-      "total_excess_tariff_margin_inr": 229652.0
+      "violations": 22,
+      "compliance_percentage": 96.42,
+      "total_excess_tariff_margin_inr": 267700.0
     },
     "SpiceJet": {
       "total_quotes": 47,
       "violations": 1,
       "compliance_percentage": 97.87,
-      "total_excess_tariff_margin_inr": 15808.5
+      "total_excess_tariff_margin_inr": 15806.0
     },
     "Akasa Air": {
       "total_quotes": 180,
       "violations": 4,
       "compliance_percentage": 97.78,
-      "total_excess_tariff_margin_inr": 64338.0
+      "total_excess_tariff_margin_inr": 64584.0
     },
     "Other": {
       "total_quotes": 147,
-      "violations": 5,
-      "compliance_percentage": 96.6,
-      "total_excess_tariff_margin_inr": 35186.0
+      "violations": 11,
+      "compliance_percentage": 92.52,
+      "total_excess_tariff_margin_inr": 84830.0
     }
   },
-  "total_non_compliant_flights": 49
+  "total_non_compliant_flights": 78
 }
